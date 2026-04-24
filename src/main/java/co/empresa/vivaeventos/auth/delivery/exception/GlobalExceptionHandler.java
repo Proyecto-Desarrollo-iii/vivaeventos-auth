@@ -1,0 +1,45 @@
+package co.empresa.vivaeventos.auth.delivery.exception;
+
+import co.empresa.vivaeventos.auth.domain.exception.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(UsuarioNoEncontradoException.class)
+    public ResponseEntity<Map<String, Object>> handleUsuarioNoEncontrado(UsuarioNoEncontradoException ex) {
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
+    }
+
+    @ExceptionHandler(UsuarioExistenteException.class)
+    public ResponseEntity<Map<String, Object>> handleUsuarioExistente(UsuarioExistenteException ex) {
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(respuesta);
+    }
+
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ResponseEntity<Map<String, Object>> handleCredencialesInvalidas(CredencialesInvalidasException ex) {
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("error", "Email o contrasena incorrectos");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(respuesta);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("error", "Error interno del servidor");
+        respuesta.put("message", ex.getMessage());
+        respuesta.put("type", ex.getClass().getName());
+        ex.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
+    }
+}
