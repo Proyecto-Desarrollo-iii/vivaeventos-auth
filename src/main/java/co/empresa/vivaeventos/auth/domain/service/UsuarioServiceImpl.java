@@ -61,7 +61,23 @@ public class UsuarioServiceImpl implements IUsuarioService {
         usuario.setEmail(request.getEmail());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
         usuario.setFullName(request.getFullName());
-        usuario.setRole(request.getRole());
+        
+        // Mapear el rol a los valores válidos de la base de datos
+        String role = request.getRole() != null ? request.getRole().toUpperCase() : "CLIENT";
+        // Mapeo de variantes en español/otros a los valores del CHECK constraint
+        if (role.equals("CLIENTE") || role.equals("CLIENT")) {
+            role = "CLIENT";
+        } else if (role.equals("ORGANIZADOR") || role.equals("ORGANIZER")) {
+            role = "ORGANIZER";
+        } else if (role.equals("ADMIN") || role.equals("ADMINISTRADOR")) {
+            role = "ADMIN";
+        } else if (role.equals("LOGISTICA") || role.equals("LOGISTICS")) {
+            role = "LOGISTICS";
+        } else {
+            role = "CLIENT"; // Valor por defecto
+        }
+        usuario.setRole(role);
+        
         usuario.setPhone(request.getPhone());
         usuario.setIsActive(true);
 

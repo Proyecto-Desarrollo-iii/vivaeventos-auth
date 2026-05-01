@@ -79,12 +79,13 @@ public class AuthRestController {
         Map<String, Object> respuesta = new HashMap<>();
         respuesta.put("mensaje", "Login exitoso");
         respuesta.put("token", authResponse);
-        respuesta.put("user", Map.of(
-                "id", authResponse.getUserId(),
-                "email", authResponse.getEmail(),
-                "fullName", authResponse.getFullName(),
-                "role", authResponse.getRole()
-        ));
+        
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("id", authResponse.getUserId() != null ? authResponse.getUserId().toString() : "");
+        userMap.put("email", authResponse.getEmail() != null ? authResponse.getEmail() : "");
+        userMap.put("fullName", authResponse.getFullName() != null ? authResponse.getFullName() : "");
+        userMap.put("role", authResponse.getRole() != null ? authResponse.getRole() : "");
+        respuesta.put("user", userMap);
 
         return ResponseEntity.ok(respuesta);
     }
