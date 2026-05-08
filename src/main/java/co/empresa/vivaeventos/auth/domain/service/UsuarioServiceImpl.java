@@ -82,8 +82,6 @@ public class UsuarioServiceImpl implements IUsuarioService {
             role = "ORGANIZER";
         } else if (role.equals("ADMIN") || role.equals("ADMINISTRADOR")) {
             role = "ADMIN";
-        } else if (role.equals("LOGISTICA") || role.equals("LOGISTICS")) {
-            role = "LOGISTICS";
         } else {
             role = "CLIENT"; // Valor por defecto
         }
