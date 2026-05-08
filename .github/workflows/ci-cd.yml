@@ -63,9 +63,15 @@ jobs:
           retention-days: 7
 
       - name: SonarQube analysis
+        uses: SonarSource/sonarqube-scan-github-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn sonar:sonar -Dsonar.projectKey=vivaeventos-auth -Dsonar.organization=proyecto-desarrollo-iii -Dsonar.host.url=https://sonarcloud.io -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+        with:
+          args: >
+            -Dsonar.projectKey=vivaeventos-auth
+            -Dsonar.organization=proyecto-desarrollo-iii
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
   docker-build-and-push:
     needs: build-and-test
