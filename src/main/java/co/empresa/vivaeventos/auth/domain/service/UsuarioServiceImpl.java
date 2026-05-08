@@ -6,8 +6,12 @@ import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException
 import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
 import co.empresa.vivaeventos.auth.domain.model.Dto.LoginRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.RegistroRequest;
+import co.empresa.vivaeventos.auth.domain.model.PasswordResetToken;
+import co.empresa.vivaeventos.auth.domain.model.Session;
 import co.empresa.vivaeventos.auth.domain.model.Usuario;
+import co.empresa.vivaeventos.auth.domain.repository.IPasswordResetTokenRepository;
 import co.empresa.vivaeventos.auth.domain.repository.IUsuarioRepository;
+import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
 import co.empresa.vivaeventos.auth.config.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,22 +19,29 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
 public class UsuarioServiceImpl implements IUsuarioService {
 
     private final IUsuarioRepository usuarioRepository;
+    private final ISessionRepository sessionRepository;
+    private final IPasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
     public UsuarioServiceImpl(
             IUsuarioRepository usuarioRepository,
+            ISessionRepository sessionRepository,
+            IPasswordResetTokenRepository passwordResetTokenRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             AuthenticationManager authenticationManager) {
         this.usuarioRepository = usuarioRepository;
+        this.sessionRepository = sessionRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
@@ -102,6 +113,12 @@ public class UsuarioServiceImpl implements IUsuarioService {
 
         String token = jwtService.generateToken(usuario);
 
+        Session session = new Session();
+        session.setUserId(usuario.getId());
+        session.setToken(token);
+        session.setExpiresAt(LocalDateTime.now().plusSeconds(jwtService.getExpirationSeconds()));
+        sessionRepository.save(session);
+
         return new AuthResponse(
                 token,
                 "Bearer",
@@ -116,5 +133,44 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Transactional(readOnly = true)
     public boolean existsByEmail(String email) {
         return usuarioRepository.existsByEmail(email);
+    }
+
+    @Override
+    @Transactional
+    public String solicitarResetPassword(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new UsuarioNoEncontradoException(email));
+
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setUserId(usuario.getId());
+        resetToken.setToken(UUID.randomUUID().toString());
+        resetToken.setExpiresAt(LocalDateTime.now().plusHours(1));
+        passwordResetTokenRepository.save(resetToken);
+
+        return resetToken.getToken();
+    }
+
+    @Override
+    @Transactional
+    public void restablecerPassword(String token, String newPassword) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Token de recuperacion invalido"));
+
+        if (resetToken.isExpired()) {
+            throw new RuntimeException("Token de recuperacion expirado");
+        }
+
+        if (resetToken.isUsed()) {
+            throw new RuntimeException("Token de recuperacion ya utilizado");
+        }
+
+        Usuario usuario = usuarioRepository.findById(resetToken.getUserId())
+                .orElseThrow(() -> new UsuarioNoEncontradoException(resetToken.getUserId().toString()));
+
+        usuario.setPassword(passwordEncoder.encode(newPassword));
+        usuarioRepository.save(usuario);
+
+        resetToken.setUsedAt(LocalDateTime.now());
+        passwordResetTokenRepository.save(resetToken);
     }
 }

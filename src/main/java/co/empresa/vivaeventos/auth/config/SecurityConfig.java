@@ -1,11 +1,13 @@
 package co.empresa.vivaeventos.auth.config;
 
+import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -24,31 +26,41 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
+    private final RequestLoggingFilter requestLoggingFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, UserDetailsService userDetailsService) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    public SecurityConfig(UserDetailsService userDetailsService, RequestLoggingFilter requestLoggingFilter) {
         this.userDetailsService = userDetailsService;
+        this.requestLoggingFilter = requestLoggingFilter;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService, ISessionRepository sessionRepository) {
+        return new JwtAuthenticationFilter(jwtService, userDetailsService, sessionRepository);
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/api/v1/auth/login").permitAll()
+                .requestMatchers("/api/v1/auth/registro").permitAll()
+                .requestMatchers("/api/v1/auth/validar-email").permitAll()
+                .requestMatchers("/api/v1/auth/ping").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/error/**").permitAll()
-                .anyRequest().permitAll()
+                .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authenticationProvider(authenticationProvider())
+            .addFilterBefore(requestLoggingFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -57,7 +69,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5000", "http://localhost:3000", "http://localhost:8080"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("*"));

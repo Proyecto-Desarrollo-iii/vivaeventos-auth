@@ -1,6 +1,8 @@
 package co.empresa.vivaeventos.auth.config;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -32,12 +34,24 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
+    public long getExpirationSeconds() {
+        return jwtExpiration / 1000;
+    }
+
     public String generateToken(UserDetails userDetails) {
         return generateToken(new HashMap<>(), userDetails);
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        extraClaims.put("role", extractRole(userDetails));
         return buildToken(extraClaims, userDetails, jwtExpiration);
+    }
+
+    private String extractRole(UserDetails userDetails) {
+        if (userDetails instanceof co.empresa.vivaeventos.auth.domain.model.Usuario usuario) {
+            return usuario.getRole();
+        }
+        return null;
     }
 
     private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, Long expiration) {
@@ -64,11 +78,15 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSignInKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            return Jwts.parser()
+                    .verifyWith(getSignInKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (ExpiredJwtException e) {
+            return e.getClaims();
+        }
     }
 
     private SecretKey getSignInKey() {

@@ -13,4 +13,6 @@ public interface IUsuarioService {
     Usuario save(RegistroRequest request);
     AuthResponse login(LoginRequest request);
     boolean existsByEmail(String email);
+    String solicitarResetPassword(String email);
+    void restablecerPassword(String token, String newPassword);
 }

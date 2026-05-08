@@ -4,9 +4,13 @@ import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
 import co.empresa.vivaeventos.auth.domain.model.Dto.LoginRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.RegistroRequest;
 import co.empresa.vivaeventos.auth.domain.model.Usuario;
+import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
 import co.empresa.vivaeventos.auth.domain.service.IUsuarioService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -16,10 +20,14 @@ import java.util.Map;
 @RequestMapping("/api/v1/auth")
 public class AuthRestController {
 
-    private final IUsuarioService usuarioService;
+    private static final Logger log = LoggerFactory.getLogger(AuthRestController.class);
 
-    public AuthRestController(IUsuarioService usuarioService) {
+    private final IUsuarioService usuarioService;
+    private final ISessionRepository sessionRepository;
+
+    public AuthRestController(IUsuarioService usuarioService, ISessionRepository sessionRepository) {
         this.usuarioService = usuarioService;
+        this.sessionRepository = sessionRepository;
     }
 
     @GetMapping("/ping")
@@ -29,24 +37,6 @@ public class AuthRestController {
         respuesta.put("message", "Auth service is running");
         respuesta.put("timestamp", System.currentTimeMillis());
         return ResponseEntity.ok(respuesta);
-    }
-
-    @PostMapping("/debug-registro")
-    public ResponseEntity<Map<String, Object>> debugRegistro(@RequestBody RegistroRequest request) {
-        Map<String, Object> respuesta = new HashMap<>();
-        try {
-            respuesta.put("received", request);
-            respuesta.put("email", request.getEmail());
-            respuesta.put("hasEmail", request.getEmail() != null);
-            respuesta.put("hasPassword", request.getPassword() != null);
-            respuesta.put("hasFullName", request.getFullName() != null);
-            respuesta.put("hasRole", request.getRole() != null);
-            return ResponseEntity.ok(respuesta);
-        } catch (Exception e) {
-            respuesta.put("error", e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
-        }
     }
 
     @PostMapping("/registro")
@@ -64,10 +54,9 @@ public class AuthRestController {
 
             return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
         } catch (Exception e) {
+            log.error("Error en registro de usuario", e);
             Map<String, Object> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            error.put("type", e.getClass().getName());
-            e.printStackTrace();
+            error.put("error", "Error interno del servidor");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
@@ -91,13 +80,69 @@ public class AuthRestController {
     }
 
     @GetMapping("/mi-perfil")
-    public ResponseEntity<Map<String, Object>> getMiPerfil(@RequestParam String email) {
+    public ResponseEntity<Map<String, Object>> getMiPerfil(Authentication authentication) {
+        String email = authentication.getName();
         Usuario usuario = usuarioService.findByEmail(email);
-        
+
         Map<String, Object> respuesta = new HashMap<>();
         respuesta.put("usuario", usuario);
-        
+
         return ResponseEntity.ok(respuesta);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, Object>> logout(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            sessionRepository.deleteByToken(token);
+        }
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("mensaje", "Sesion cerrada exitosamente");
+        return ResponseEntity.ok(respuesta);
+    }
+
+    @PostMapping("/solicitar-reset-password")
+    public ResponseEntity<Map<String, Object>> solicitarResetPassword(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.isBlank()) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Email requerido");
+            return ResponseEntity.badRequest().body(error);
+        }
+        try {
+            String token = usuarioService.solicitarResetPassword(email);
+            Map<String, Object> respuesta = new HashMap<>();
+            respuesta.put("mensaje", "Si el email existe, recibiras un enlace de recuperacion");
+            log.info("Password reset token for {}: {}", email, token);
+            return ResponseEntity.ok(respuesta);
+        } catch (Exception e) {
+            Map<String, Object> respuesta = new HashMap<>();
+            respuesta.put("mensaje", "Si el email existe, recibiras un enlace de recuperacion");
+            return ResponseEntity.ok(respuesta);
+        }
+    }
+
+    @PostMapping("/restablecer-password")
+    public ResponseEntity<Map<String, Object>> restablecerPassword(@RequestBody Map<String, String> body) {
+        String token = body.get("token");
+        String newPassword = body.get("newPassword");
+
+        if (token == null || newPassword == null || newPassword.isBlank()) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Token y nueva contrasena requeridos");
+            return ResponseEntity.badRequest().body(error);
+        }
+
+        try {
+            usuarioService.restablecerPassword(token, newPassword);
+            Map<String, Object> respuesta = new HashMap<>();
+            respuesta.put("mensaje", "Contrasena restablecida exitosamente");
+            return ResponseEntity.ok(respuesta);
+        } catch (RuntimeException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
     }
 
     @GetMapping("/validar-email")

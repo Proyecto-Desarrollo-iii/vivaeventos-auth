@@ -1,5 +1,6 @@
 package co.empresa.vivaeventos.auth.config;
 
+import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,16 +15,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
-@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final ISessionRepository sessionRepository;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService, ISessionRepository sessionRepository) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
+        this.sessionRepository = sessionRepository;
     }
 
     @Override
@@ -36,9 +39,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt;
         final String userEmail;
 
-        // Skip JWT processing for auth endpoints (login, registro)
         String path = request.getRequestURI();
-        if (path.contains("/auth/login") || path.contains("/auth/registro") || path.contains("/auth/validar")) {
+        if (path.contains("/auth/login") || path.contains("/auth/registro") || path.contains("/auth/validar") || path.contains("/auth/ping")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -49,8 +51,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         jwt = authHeader.substring(7);
-        
+
         try {
+            boolean sessionValid = sessionRepository.findByTokenAndExpiresAtAfter(jwt, LocalDateTime.now()).isPresent();
+            if (!sessionValid) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             userEmail = jwtService.extractUsername(jwt);
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
