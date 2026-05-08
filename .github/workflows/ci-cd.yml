@@ -7,6 +7,7 @@ on:
       - 'src/**'
       - 'pom.xml'
       - 'Dockerfile'
+      - '.github/**'
   pull_request:
     branches: [main, master]
   workflow_dispatch:
