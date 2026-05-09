@@ -1,6 +1,8 @@
 package co.empresa.vivaeventos.auth.delivery.rest;
 
+import co.empresa.vivaeventos.auth.domain.model.Dto.ActualizarPerfilRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
+import co.empresa.vivaeventos.auth.domain.model.Dto.CambiarPasswordRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.LoginRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.RegistroRequest;
 import co.empresa.vivaeventos.auth.domain.model.Usuario;
@@ -78,6 +80,12 @@ public class AuthRestController {
         userMap.put("email", authResponse.getEmail() != null ? authResponse.getEmail() : "");
         userMap.put("fullName", authResponse.getFullName() != null ? authResponse.getFullName() : "");
         userMap.put("role", authResponse.getRole() != null ? authResponse.getRole() : "");
+        userMap.put("phonePrefix", authResponse.getPhonePrefix() != null ? authResponse.getPhonePrefix() : "");
+        userMap.put("phone", authResponse.getPhone() != null ? authResponse.getPhone() : "");
+        userMap.put("documentType", authResponse.getDocumentType() != null ? authResponse.getDocumentType() : "");
+        userMap.put("documentNumber", authResponse.getDocumentNumber() != null ? authResponse.getDocumentNumber() : "");
+        userMap.put("country", authResponse.getCountry() != null ? authResponse.getCountry() : "");
+        userMap.put("birthDate", authResponse.getBirthDate() != null ? authResponse.getBirthDate() : "");
         respuesta.put("user", userMap);
 
         return ResponseEntity.ok(respuesta);
@@ -89,6 +97,20 @@ public class AuthRestController {
         Usuario usuario = usuarioService.findByEmail(email);
 
         Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("usuario", usuario);
+
+        return ResponseEntity.ok(respuesta);
+    }
+
+    @PutMapping("/mi-perfil")
+    public ResponseEntity<Map<String, Object>> actualizarMiPerfil(
+            Authentication authentication,
+            @RequestBody ActualizarPerfilRequest request) {
+        String email = authentication.getName();
+        Usuario usuario = usuarioService.actualizarPerfil(email, request);
+
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("mensaje", "Perfil actualizado exitosamente");
         respuesta.put("usuario", usuario);
 
         return ResponseEntity.ok(respuesta);
@@ -146,6 +168,33 @@ public class AuthRestController {
             Map<String, Object> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    @PutMapping("/cambiar-password")
+    public ResponseEntity<Map<String, Object>> cambiarPassword(
+            Authentication authentication,
+            @RequestBody CambiarPasswordRequest request) {
+        String email = authentication.getName();
+
+        Map<String, Object> respuesta = new HashMap<>();
+        try {
+            boolean cerrarOtrasSesiones = request.isCerrarOtrasSesiones();
+            usuarioService.cambiarPassword(
+                    email,
+                    request.getPasswordActual(),
+                    request.getNuevaPassword(),
+                    request.getConfirmarPassword(),
+                    cerrarOtrasSesiones
+            );
+            respuesta.put("mensaje", "Contrasena cambiada exitosamente");
+            return ResponseEntity.ok(respuesta);
+        } catch (IllegalArgumentException e) {
+            respuesta.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(respuesta);
+        } catch (co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException e) {
+            respuesta.put("error", "La contrasena actual no es correcta");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(respuesta);
         }
     }
 

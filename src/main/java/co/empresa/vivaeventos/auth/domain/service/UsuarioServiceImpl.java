@@ -3,6 +3,7 @@ package co.empresa.vivaeventos.auth.domain.service;
 import co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioExistenteException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
+import co.empresa.vivaeventos.auth.domain.model.Dto.ActualizarPerfilRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
 import co.empresa.vivaeventos.auth.domain.model.Dto.LoginRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.RegistroRequest;
@@ -87,7 +88,12 @@ public class UsuarioServiceImpl implements IUsuarioService {
         }
         usuario.setRole(role);
         
+        usuario.setPhonePrefix(request.getPhonePrefix());
         usuario.setPhone(request.getPhone());
+        usuario.setDocumentType(request.getDocumentType());
+        usuario.setDocumentNumber(request.getDocumentNumber());
+        usuario.setCountry(request.getCountry());
+        usuario.setBirthDate(request.getBirthDate());
         usuario.setIsActive(true);
 
         return usuarioRepository.save(usuario);
@@ -123,7 +129,13 @@ public class UsuarioServiceImpl implements IUsuarioService {
                 usuario.getId().toString(),
                 usuario.getEmail(),
                 usuario.getFullName(),
-                usuario.getRole()
+                usuario.getRole(),
+                usuario.getPhonePrefix(),
+                usuario.getPhone(),
+                usuario.getDocumentType(),
+                usuario.getDocumentNumber(),
+                usuario.getCountry(),
+                usuario.getBirthDate() != null ? usuario.getBirthDate().toString() : null
         );
     }
 
@@ -170,5 +182,58 @@ public class UsuarioServiceImpl implements IUsuarioService {
 
         resetToken.setUsedAt(LocalDateTime.now());
         passwordResetTokenRepository.save(resetToken);
+    }
+
+    @Override
+    @Transactional
+    public Usuario actualizarPerfil(String email, ActualizarPerfilRequest request) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new UsuarioNoEncontradoException(email));
+
+        if (request.getFullName() != null) {
+            usuario.setFullName(request.getFullName());
+        }
+        if (request.getPhonePrefix() != null) {
+            usuario.setPhonePrefix(request.getPhonePrefix());
+        }
+        if (request.getPhone() != null) {
+            usuario.setPhone(request.getPhone());
+        }
+        if (request.getDocumentType() != null) {
+            usuario.setDocumentType(request.getDocumentType());
+        }
+        if (request.getDocumentNumber() != null) {
+            usuario.setDocumentNumber(request.getDocumentNumber());
+        }
+        if (request.getCountry() != null) {
+            usuario.setCountry(request.getCountry());
+        }
+        if (request.getBirthDate() != null) {
+            usuario.setBirthDate(request.getBirthDate());
+        }
+
+        return usuarioRepository.save(usuario);
+    }
+
+    @Override
+    @Transactional
+    public void cambiarPassword(String email, String passwordActual, String nuevaPassword, String confirmarPassword, boolean cerrarOtrasSesiones) {
+        if (!nuevaPassword.equals(confirmarPassword)) {
+            throw new IllegalArgumentException("Las contrasenas no coinciden");
+        }
+
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new UsuarioNoEncontradoException(email));
+
+        if (!passwordEncoder.matches(passwordActual, usuario.getPassword())) {
+            throw new CredencialesInvalidasException();
+        }
+
+        usuario.setPassword(passwordEncoder.encode(nuevaPassword));
+        usuarioRepository.save(usuario);
+
+        if (cerrarOtrasSesiones) {
+            sessionRepository.deleteByUserId(usuario.getId());
+        }
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -35,6 +36,9 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private String role;
 
+    @Column(name = "phone_prefix")
+    private String phonePrefix;
+
     @Column
     private String phone;
 
@@ -43,6 +47,12 @@ public class Usuario implements UserDetails {
 
     @Column(name = "document_number")
     private String documentNumber;
+
+    @Column
+    private String country;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
 
     @Column(name = "is_active")
     private Boolean isActive = true;

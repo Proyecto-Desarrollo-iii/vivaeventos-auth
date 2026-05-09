@@ -14,4 +14,10 @@ public class AuthResponse {
     private String email;
     private String fullName;
     private String role;
+    private String phonePrefix;
+    private String phone;
+    private String documentType;
+    private String documentNumber;
+    private String country;
+    private String birthDate;
 }

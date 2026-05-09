@@ -1,5 +1,6 @@
 package co.empresa.vivaeventos.auth.domain.service;
 
+import co.empresa.vivaeventos.auth.domain.model.Dto.ActualizarPerfilRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
 import co.empresa.vivaeventos.auth.domain.model.Dto.LoginRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.RegistroRequest;
@@ -15,4 +16,6 @@ public interface IUsuarioService {
     boolean existsByEmail(String email);
     String solicitarResetPassword(String email);
     void restablecerPassword(String token, String newPassword);
+    Usuario actualizarPerfil(String email, ActualizarPerfilRequest request);
+    void cambiarPassword(String email, String passwordActual, String nuevaPassword, String confirmarPassword, boolean cerrarOtrasSesiones);
 }

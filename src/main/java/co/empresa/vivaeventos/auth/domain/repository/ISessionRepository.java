@@ -11,4 +11,5 @@ public interface ISessionRepository extends JpaRepository<Session, UUID> {
     Optional<Session> findByTokenAndExpiresAtAfter(String token, LocalDateTime now);
     int deleteByToken(String token);
     int deleteByExpiresAtBefore(LocalDateTime before);
+    int deleteByUserId(UUID userId);
 }
