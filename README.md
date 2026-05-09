@@ -1,19 +1,22 @@
-# vivaeventos-auth
 
-Microservicio de autenticación y autorización para VivaEventos.
+# vivaeventos-events
+
+Microservicio de gestión de eventos para VivaEventos.
 
 ## Descripción
 
 Encargado de:
-- Login y registro de usuarios
-- Gestión de roles (cliente, organizador, logística, admin)
-- JWT tokens
-- Políticas de acceso
+- Creación de eventos
+- Gestión de información básica del evento
+- Gestión de entradas y precios
+- Gestión de ubicación del evento
+- Gestión de información del artista y redes sociales
+- Publicación y despublicación de eventos
 
 ## Puerto
 
 ```
-8088
+8081
 ```
 
 ## Documentación
