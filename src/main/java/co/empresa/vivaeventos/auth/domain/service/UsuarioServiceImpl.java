@@ -1,6 +1,7 @@
 package co.empresa.vivaeventos.auth.domain.service;
 
 import co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException;
+import co.empresa.vivaeventos.auth.domain.exception.TwoFactorRequiredException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioExistenteException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
 import co.empresa.vivaeventos.auth.domain.model.Dto.ActualizarPerfilRequest;
@@ -83,6 +84,8 @@ public class UsuarioServiceImpl implements IUsuarioService {
             role = "ORGANIZER";
         } else if (role.equals("ADMIN") || role.equals("ADMINISTRADOR")) {
             role = "ADMIN";
+        } else if (role.equals("LOGISTICA") || role.equals("LOGISTICS")) {
+            role = "LOGISTICA";
         } else {
             role = "CLIENT"; // Valor por defecto
         }
@@ -115,6 +118,11 @@ public class UsuarioServiceImpl implements IUsuarioService {
             throw new CredencialesInvalidasException();
         }
 
+        if (Boolean.TRUE.equals(usuario.getTwoFactorEnabled())) {
+            String tempToken = jwtService.generateTemporaryToken(usuario);
+            throw new TwoFactorRequiredException(tempToken, usuario.getId().toString());
+        }
+
         String token = jwtService.generateToken(usuario);
 
         Session session = new Session();
@@ -135,7 +143,8 @@ public class UsuarioServiceImpl implements IUsuarioService {
                 usuario.getDocumentType(),
                 usuario.getDocumentNumber(),
                 usuario.getCountry(),
-                usuario.getBirthDate() != null ? usuario.getBirthDate().toString() : null
+                usuario.getBirthDate() != null ? usuario.getBirthDate().toString() : null,
+                Boolean.TRUE.equals(usuario.getTwoFactorEnabled())
         );
     }
 
