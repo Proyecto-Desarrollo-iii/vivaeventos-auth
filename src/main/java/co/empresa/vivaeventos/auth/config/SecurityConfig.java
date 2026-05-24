@@ -52,6 +52,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/registro").permitAll()
                 .requestMatchers("/api/v1/auth/validar-email").permitAll()
                 .requestMatchers("/api/v1/auth/ping").permitAll()
+                .requestMatchers("/api/v1/auth/2fa/authenticate").permitAll()
+                .requestMatchers("/api/v1/auth/2fa/send-code").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/error/**").permitAll()
                 .anyRequest().authenticated()
@@ -69,7 +71,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5000", "http://localhost:3000", "http://localhost:8080"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5000", "http://localhost:3000", "http://localhost:8080", "http://192.168.18.59:5000", "https://192.168.18.59:5443"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("*"));
