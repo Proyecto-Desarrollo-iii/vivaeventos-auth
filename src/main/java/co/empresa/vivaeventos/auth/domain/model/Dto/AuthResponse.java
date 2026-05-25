@@ -20,4 +20,5 @@ public class AuthResponse {
     private String documentNumber;
     private String country;
     private String birthDate;
+    private boolean twoFactorEnabled;
 }

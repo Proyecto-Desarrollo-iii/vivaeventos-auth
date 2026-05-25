@@ -25,6 +25,12 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private Long jwtExpiration;
 
+    @Value("${jwt.temporary.expiration:300000}")
+    private Long temporaryExpiration;
+
+    private static final String TOKEN_TYPE_TEMPORARY = "temporary";
+    private static final String TOKEN_TYPE_CLAIM = "token_type";
+
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -36,6 +42,21 @@ public class JwtService {
 
     public long getExpirationSeconds() {
         return jwtExpiration / 1000;
+    }
+
+    public String generateTemporaryToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(TOKEN_TYPE_CLAIM, TOKEN_TYPE_TEMPORARY);
+        return buildToken(claims, userDetails, temporaryExpiration);
+    }
+
+    public boolean isTemporaryToken(String token) {
+        try {
+            String tokenType = extractClaim(token, claims -> claims.get(TOKEN_TYPE_CLAIM, String.class));
+            return TOKEN_TYPE_TEMPORARY.equals(tokenType);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public String generateToken(UserDetails userDetails) {
@@ -69,7 +90,7 @@ public class JwtService {
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
 
-    private boolean isTokenExpired(String token) {
+    public boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 

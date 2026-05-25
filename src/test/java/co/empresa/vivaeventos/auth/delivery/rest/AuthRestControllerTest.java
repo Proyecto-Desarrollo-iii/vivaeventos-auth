@@ -40,7 +40,7 @@ class AuthRestControllerTest {
 
     @Test
     void shouldLogin() throws Exception {
-        AuthResponse authResponse = new AuthResponse("token", "Bearer", "1", "a@b.com", "Test", "CLIENT", null, null, null, null, null, null);
+        AuthResponse authResponse = new AuthResponse("token", "Bearer", "1", "a@b.com", "Test", "CLIENT", null, null, null, null, null, null, false);
         when(usuarioService.login(any(LoginRequest.class))).thenReturn(authResponse);
 
         mockMvc.perform(post("/api/v1/auth/login")
@@ -55,7 +55,7 @@ class AuthRestControllerTest {
     void shouldRegister() throws Exception {
         Usuario usuario = new Usuario();
         usuario.setEmail("new@b.com");
-        AuthResponse authResponse = new AuthResponse("token", "Bearer", "2", "new@b.com", "New", "CLIENT", null, null, null, null, null, null);
+        AuthResponse authResponse = new AuthResponse("token", "Bearer", "2", "new@b.com", "New", "CLIENT", null, null, null, null, null, null, false);
         when(usuarioService.save(any(RegistroRequest.class))).thenReturn(usuario);
         when(usuarioService.login(any(LoginRequest.class))).thenReturn(authResponse);
 

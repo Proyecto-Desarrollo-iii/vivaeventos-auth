@@ -54,6 +54,15 @@ public class Usuario implements UserDetails {
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
+    @Column(name = "two_factor_secret")
+    private String twoFactorSecret;
+
+    @Column(name = "two_factor_enabled")
+    private Boolean twoFactorEnabled = false;
+
+    @Column(name = "two_factor_method")
+    private String twoFactorMethod;
+
     @Column(name = "is_active")
     private Boolean isActive = true;
 
