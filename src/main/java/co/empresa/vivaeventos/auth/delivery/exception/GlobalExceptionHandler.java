@@ -33,6 +33,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(respuesta);
     }
 
+    @ExceptionHandler(TwoFactorRequiredException.class)
+    public ResponseEntity<Map<String, Object>> handleTwoFactorRequired(TwoFactorRequiredException ex) {
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("twoFactorRequired", true);
+        respuesta.put("tempToken", ex.getTempToken());
+        respuesta.put("userId", ex.getUserId());
+        return ResponseEntity.ok(respuesta);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
         Map<String, Object> respuesta = new HashMap<>();
