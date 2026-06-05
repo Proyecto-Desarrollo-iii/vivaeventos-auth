@@ -1,6 +1,7 @@
 package co.empresa.vivaeventos.auth.domain.service;
 
 import co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException;
+import co.empresa.vivaeventos.auth.domain.exception.DatosInvalidosException;
 import co.empresa.vivaeventos.auth.domain.exception.TwoFactorRequiredException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioExistenteException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
@@ -21,11 +22,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 public class UsuarioServiceImpl implements IUsuarioService {
+
+    private static final Pattern EMAIL_PATTERN =
+            Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern SOLO_DIGITOS = Pattern.compile("^\\d+$");
+    private static final int PASSWORD_MIN_LENGTH = 8;
 
     private final IUsuarioRepository usuarioRepository;
     private final ISessionRepository sessionRepository;
@@ -66,14 +74,16 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Override
     @Transactional
     public Usuario save(RegistroRequest request) {
-        if (usuarioRepository.existsByEmail(request.getEmail())) {
+        validarDatosRegistro(request);
+
+        if (usuarioRepository.existsByEmail(request.getEmail().trim())) {
             throw new UsuarioExistenteException(request.getEmail());
         }
 
         Usuario usuario = new Usuario();
-        usuario.setEmail(request.getEmail());
+        usuario.setEmail(request.getEmail().trim().toLowerCase());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
-        usuario.setFullName(request.getFullName());
+        usuario.setFullName(request.getFullName().trim());
         
         // Mapear el rol a los valores válidos de la base de datos
         String role = request.getRole() != null ? request.getRole().toUpperCase() : "CLIENT";
@@ -100,6 +110,61 @@ public class UsuarioServiceImpl implements IUsuarioService {
         usuario.setIsActive(true);
 
         return usuarioRepository.save(usuario);
+    }
+
+    /**
+     * Valida los datos obligatorios y el formato de la solicitud de registro.
+     * Lanza {@link DatosInvalidosException} (HTTP 400) ante el primer error encontrado.
+     */
+    private void validarDatosRegistro(RegistroRequest request) {
+        if (request == null) {
+            throw new DatosInvalidosException("Los datos de registro son obligatorios");
+        }
+
+        // Email
+        String email = request.getEmail();
+        if (email == null || email.isBlank()) {
+            throw new DatosInvalidosException("El email es obligatorio");
+        }
+        if (!EMAIL_PATTERN.matcher(email.trim()).matches()) {
+            throw new DatosInvalidosException("El formato del email no es valido");
+        }
+
+        // Contrasena
+        String password = request.getPassword();
+        if (password == null || password.isBlank()) {
+            throw new DatosInvalidosException("La contrasena es obligatoria");
+        }
+        if (password.length() < PASSWORD_MIN_LENGTH) {
+            throw new DatosInvalidosException(
+                    "La contrasena debe tener al menos " + PASSWORD_MIN_LENGTH + " caracteres");
+        }
+
+        // Nombre completo
+        String fullName = request.getFullName();
+        if (fullName == null || fullName.isBlank()) {
+            throw new DatosInvalidosException("El nombre completo es obligatorio");
+        }
+
+        // Numero de documento (opcional, pero si viene debe ser numerico)
+        String documentNumber = request.getDocumentNumber();
+        if (documentNumber != null && !documentNumber.isBlank()
+                && !SOLO_DIGITOS.matcher(documentNumber.trim()).matches()) {
+            throw new DatosInvalidosException("El numero de documento solo debe contener numeros");
+        }
+
+        // Telefono (opcional, pero si viene debe ser numerico)
+        String phone = request.getPhone();
+        if (phone != null && !phone.isBlank()
+                && !SOLO_DIGITOS.matcher(phone.trim()).matches()) {
+            throw new DatosInvalidosException("El telefono solo debe contener numeros");
+        }
+
+        // Fecha de nacimiento (opcional, pero no puede ser futura)
+        LocalDate birthDate = request.getBirthDate();
+        if (birthDate != null && birthDate.isAfter(LocalDate.now())) {
+            throw new DatosInvalidosException("La fecha de nacimiento no puede ser futura");
+        }
     }
 
     @Override
