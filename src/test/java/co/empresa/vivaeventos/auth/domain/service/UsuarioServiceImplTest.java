@@ -2,6 +2,7 @@ package co.empresa.vivaeventos.auth.domain.service;
 
 import co.empresa.vivaeventos.auth.config.JwtService;
 import co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException;
+import co.empresa.vivaeventos.auth.domain.exception.DatosInvalidosException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioExistenteException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
 import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
@@ -20,6 +21,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -81,6 +83,8 @@ class UsuarioServiceImplTest {
     void shouldThrowWhenEmailAlreadyExists() {
         RegistroRequest request = new RegistroRequest();
         request.setEmail("existing@email.com");
+        request.setPassword("password123");
+        request.setFullName("Existing User");
 
         when(usuarioRepository.existsByEmail("existing@email.com")).thenReturn(true);
 
@@ -125,7 +129,8 @@ class UsuarioServiceImplTest {
     void shouldMapRolesCorrectly() {
         RegistroRequest request = new RegistroRequest();
         request.setEmail("role@email.com");
-        request.setPassword("pass");
+        request.setPassword("password123");
+        request.setFullName("Role User");
         request.setRole("ORGANIZADOR");
 
         when(usuarioRepository.existsByEmail("role@email.com")).thenReturn(false);
@@ -134,5 +139,86 @@ class UsuarioServiceImplTest {
         Usuario result = usuarioService.save(request);
 
         assertEquals("ORGANIZER", result.getRole());
+    }
+
+    private RegistroRequest requestValido() {
+        RegistroRequest request = new RegistroRequest();
+        request.setEmail("valido@email.com");
+        request.setPassword("password123");
+        request.setFullName("Usuario Valido");
+        request.setRole("CLIENT");
+        return request;
+    }
+
+    @Test
+    void shouldThrowWhenEmailIsBlank() {
+        RegistroRequest request = requestValido();
+        request.setEmail("   ");
+
+        assertThrows(DatosInvalidosException.class, () -> usuarioService.save(request));
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenEmailFormatIsInvalid() {
+        RegistroRequest request = requestValido();
+        request.setEmail("correo-sin-arroba");
+
+        assertThrows(DatosInvalidosException.class, () -> usuarioService.save(request));
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenPasswordIsMissing() {
+        RegistroRequest request = requestValido();
+        request.setPassword(null);
+
+        assertThrows(DatosInvalidosException.class, () -> usuarioService.save(request));
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenPasswordIsTooShort() {
+        RegistroRequest request = requestValido();
+        request.setPassword("123");
+
+        assertThrows(DatosInvalidosException.class, () -> usuarioService.save(request));
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenFullNameIsBlank() {
+        RegistroRequest request = requestValido();
+        request.setFullName("  ");
+
+        assertThrows(DatosInvalidosException.class, () -> usuarioService.save(request));
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenDocumentNumberIsNotNumeric() {
+        RegistroRequest request = requestValido();
+        request.setDocumentNumber("12A45");
+
+        assertThrows(DatosInvalidosException.class, () -> usuarioService.save(request));
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenPhoneIsNotNumeric() {
+        RegistroRequest request = requestValido();
+        request.setPhone("300-123-4567");
+
+        assertThrows(DatosInvalidosException.class, () -> usuarioService.save(request));
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenBirthDateIsInTheFuture() {
+        RegistroRequest request = requestValido();
+        request.setBirthDate(LocalDate.now().plusDays(1));
+
+        assertThrows(DatosInvalidosException.class, () -> usuarioService.save(request));
+        verify(usuarioRepository, never()).save(any());
     }
 }

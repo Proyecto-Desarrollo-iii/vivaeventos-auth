@@ -55,6 +55,10 @@ public class AuthRestController {
             respuesta.put("token", authResponse);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
+        } catch (co.empresa.vivaeventos.auth.domain.exception.DatosInvalidosException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (co.empresa.vivaeventos.auth.domain.exception.UsuarioExistenteException e) {
             Map<String, Object> error = new HashMap<>();
             error.put("error", e.getMessage());
