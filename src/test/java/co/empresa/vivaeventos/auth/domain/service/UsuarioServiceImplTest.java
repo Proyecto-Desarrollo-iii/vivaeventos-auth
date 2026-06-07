@@ -8,6 +8,7 @@ import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException
 import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
 import co.empresa.vivaeventos.auth.domain.model.Dto.LoginRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.RegistroRequest;
+import co.empresa.vivaeventos.auth.domain.model.Rol;
 import co.empresa.vivaeventos.auth.domain.model.Usuario;
 import co.empresa.vivaeventos.auth.domain.repository.IPasswordResetTokenRepository;
 import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
@@ -158,6 +159,13 @@ class UsuarioServiceImplTest {
         Usuario result = usuarioService.save(request);
 
         assertEquals(expectedRole, result.getRole());
+    }
+
+    @Test
+    void shouldContainGerenteRoleConstant() {
+        Rol gerente = Rol.valueOf("GERENTE");
+        assertNotNull(gerente);
+        assertEquals("GERENTE", gerente.name());
     }
 
     private RegistroRequest requestValido() {
