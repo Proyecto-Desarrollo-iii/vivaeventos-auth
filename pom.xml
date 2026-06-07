@@ -123,8 +123,7 @@
                     </execution>
                     <execution>
                         <id>report</id>
-                        <phase>test</phase>
-                        <goals>
+                        <phase>verify</phase> <goals>
                             <goal>report</goal>
                         </goals>
                     </execution>

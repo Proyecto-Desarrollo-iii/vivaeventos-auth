@@ -16,6 +16,8 @@ import co.empresa.vivaeventos.auth.domain.repository.IPasswordResetTokenReposito
 import co.empresa.vivaeventos.auth.domain.repository.IUsuarioRepository;
 import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
 import co.empresa.vivaeventos.auth.config.JwtService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -41,6 +43,11 @@ public class UsuarioServiceImpl implements IUsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+
+    // Inyección de la misma clase para evitar el problema de "this" en métodos @Transactional
+    @Autowired
+    @Lazy
+    private UsuarioServiceImpl self;
 
     public UsuarioServiceImpl(
             IUsuarioRepository usuarioRepository,
@@ -84,7 +91,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
         usuario.setEmail(request.getEmail().trim().toLowerCase());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
         usuario.setFullName(request.getFullName().trim());
-        
+
         // Mapear el rol a los valores válidos de la base de datos
         String role = request.getRole() != null ? request.getRole().toUpperCase() : "CLIENT";
         // Mapeo de variantes en español/otros a los valores del CHECK constraint
@@ -100,7 +107,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
             role = "CLIENT"; // Valor por defecto
         }
         usuario.setRole(role);
-        
+
         usuario.setPhonePrefix(request.getPhonePrefix());
         usuario.setPhone(request.getPhone());
         usuario.setDocumentType(request.getDocumentType());
@@ -177,8 +184,10 @@ public class UsuarioServiceImpl implements IUsuarioService {
                 )
         );
 
-        Usuario usuario = findByEmail(request.getEmail());
-        
+        // CORRECCIÓN: Llamamos a findByEmail a través de "self" para que el proxy interceptor
+        // de Spring pueda aplicar la anotación @Transactional correctamente.
+        Usuario usuario = self.findByEmail(request.getEmail());
+
         if (usuario.getIsActive() == null || !usuario.getIsActive()) {
             throw new CredencialesInvalidasException();
         }
