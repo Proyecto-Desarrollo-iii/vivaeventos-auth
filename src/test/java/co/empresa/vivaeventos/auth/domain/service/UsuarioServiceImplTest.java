@@ -126,19 +126,131 @@ class UsuarioServiceImplTest {
     }
 
     @Test
-    void shouldMapRolesCorrectly() {
+    void shouldMapOrganizadorToOrganizer() {
         RegistroRequest request = new RegistroRequest();
-        request.setEmail("role@email.com");
+        request.setEmail("org@email.com");
         request.setPassword("password123");
-        request.setFullName("Role User");
+        request.setFullName("Org User");
         request.setRole("ORGANIZADOR");
 
-        when(usuarioRepository.existsByEmail("role@email.com")).thenReturn(false);
+        when(usuarioRepository.existsByEmail("org@email.com")).thenReturn(false);
         when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         Usuario result = usuarioService.save(request);
 
         assertEquals("ORGANIZER", result.getRole());
+    }
+
+    @Test
+    void shouldMapOrganizerAsIs() {
+        RegistroRequest request = new RegistroRequest();
+        request.setEmail("org2@email.com");
+        request.setPassword("password123");
+        request.setFullName("Org User");
+        request.setRole("ORGANIZER");
+
+        when(usuarioRepository.existsByEmail("org2@email.com")).thenReturn(false);
+        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        Usuario result = usuarioService.save(request);
+
+        assertEquals("ORGANIZER", result.getRole());
+    }
+
+    @Test
+    void shouldMapAdminAsIs() {
+        RegistroRequest request = new RegistroRequest();
+        request.setEmail("admin@email.com");
+        request.setPassword("password123");
+        request.setFullName("Admin User");
+        request.setRole("ADMIN");
+
+        when(usuarioRepository.existsByEmail("admin@email.com")).thenReturn(false);
+        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        Usuario result = usuarioService.save(request);
+
+        assertEquals("ADMIN", result.getRole());
+    }
+
+    @Test
+    void shouldMapGerenteToAdmin() {
+        RegistroRequest request = new RegistroRequest();
+        request.setEmail("gerente@email.com");
+        request.setPassword("password123");
+        request.setFullName("Gerente User");
+        request.setRole("GERENTE");
+
+        when(usuarioRepository.existsByEmail("gerente@email.com")).thenReturn(false);
+        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        Usuario result = usuarioService.save(request);
+
+        assertEquals("ADMIN", result.getRole());
+    }
+
+    @Test
+    void shouldMapAdministradorToAdmin() {
+        RegistroRequest request = new RegistroRequest();
+        request.setEmail("admin2@email.com");
+        request.setPassword("password123");
+        request.setFullName("Admin User");
+        request.setRole("ADMINISTRADOR");
+
+        when(usuarioRepository.existsByEmail("admin2@email.com")).thenReturn(false);
+        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        Usuario result = usuarioService.save(request);
+
+        assertEquals("ADMIN", result.getRole());
+    }
+
+    @Test
+    void shouldMapLogisticaAsIs() {
+        RegistroRequest request = new RegistroRequest();
+        request.setEmail("logistica@email.com");
+        request.setPassword("password123");
+        request.setFullName("Logistica User");
+        request.setRole("LOGISTICA");
+
+        when(usuarioRepository.existsByEmail("logistica@email.com")).thenReturn(false);
+        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        Usuario result = usuarioService.save(request);
+
+        assertEquals("LOGISTICA", result.getRole());
+    }
+
+    @Test
+    void shouldMapDefaultRoleToClientWhenNull() {
+        RegistroRequest request = new RegistroRequest();
+        request.setEmail("default@email.com");
+        request.setPassword("password123");
+        request.setFullName("Default User");
+        request.setRole(null);
+
+        when(usuarioRepository.existsByEmail("default@email.com")).thenReturn(false);
+        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        Usuario result = usuarioService.save(request);
+
+        assertEquals("CLIENT", result.getRole());
+    }
+
+    @Test
+    void shouldMapDefaultRoleToClientWhenUnknown() {
+        RegistroRequest request = new RegistroRequest();
+        request.setEmail("unknown@email.com");
+        request.setPassword("password123");
+        request.setFullName("Unknown User");
+        request.setRole("SUPERADMIN");
+
+        when(usuarioRepository.existsByEmail("unknown@email.com")).thenReturn(false);
+        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        Usuario result = usuarioService.save(request);
+
+        assertEquals("CLIENT", result.getRole());
     }
 
     private RegistroRequest requestValido() {
