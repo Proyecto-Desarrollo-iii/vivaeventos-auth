@@ -50,6 +50,13 @@ class UsuarioServiceImplTest {
     private PasswordEncoder passwordEncoder;
     private UsuarioServiceImpl usuarioService;
 
+    private static final String ACTIVE_EMAIL = "active@email.com";
+    private static final String UPDATE_EMAIL = "update@email.com";
+    private static final String RESET_EMAIL = "reset@email.com";
+    private static final String CHANGE_EMAIL = "change@email.com";
+    private static final String USER_EMAIL = "user@email.com";
+    private static final String NEW_PASS = "newPass";
+
     @BeforeEach
     void setUp() {
         passwordEncoder = new BCryptPasswordEncoder();
@@ -252,17 +259,17 @@ class UsuarioServiceImplTest {
 
     @Test
     void shouldLoginSuccessfully() {
-        LoginRequest request = new LoginRequest("active@email.com", "pass");
+        LoginRequest request = new LoginRequest(ACTIVE_EMAIL, "pass");
         UUID userId = UUID.randomUUID();
         Usuario usuario = new Usuario();
         usuario.setId(userId);
-        usuario.setEmail("active@email.com");
+        usuario.setEmail(ACTIVE_EMAIL);
         usuario.setPassword(passwordEncoder.encode("pass"));
         usuario.setFullName("Active User");
         usuario.setRole("ORGANIZER");
         usuario.setIsActive(true);
 
-        when(usuarioRepository.findByEmail("active@email.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByEmail(ACTIVE_EMAIL)).thenReturn(Optional.of(usuario));
         when(jwtService.generateToken(usuario)).thenReturn("jwt-token");
         when(jwtService.getExpirationSeconds()).thenReturn(86400L);
 
@@ -272,7 +279,7 @@ class UsuarioServiceImplTest {
         assertEquals("jwt-token", response.getToken());
         assertEquals("Bearer", response.getType());
         assertEquals(userId.toString(), response.getUserId());
-        assertEquals("active@email.com", response.getEmail());
+        assertEquals(ACTIVE_EMAIL, response.getEmail());
         assertEquals("Active User", response.getFullName());
         assertEquals("ORGANIZER", response.getRole());
         verify(sessionRepository).save(any());
@@ -292,10 +299,10 @@ class UsuarioServiceImplTest {
         UUID userId = UUID.randomUUID();
         Usuario usuario = new Usuario();
         usuario.setId(userId);
-        usuario.setEmail("update@email.com");
+        usuario.setEmail(UPDATE_EMAIL);
         usuario.setFullName("Old Name");
 
-        when(usuarioRepository.findByEmail("update@email.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByEmail(UPDATE_EMAIL)).thenReturn(Optional.of(usuario));
         when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         ActualizarPerfilRequest request = new ActualizarPerfilRequest();
@@ -303,7 +310,7 @@ class UsuarioServiceImplTest {
         request.setPhonePrefix("+57");
         request.setPhone("3001234567");
 
-        Usuario result = usuarioService.actualizarPerfil("update@email.com", request);
+        Usuario result = usuarioService.actualizarPerfil(UPDATE_EMAIL, request);
 
         assertEquals("New Name", result.getFullName());
         assertEquals("+57", result.getPhonePrefix());
@@ -316,12 +323,12 @@ class UsuarioServiceImplTest {
         UUID userId = UUID.randomUUID();
         Usuario usuario = new Usuario();
         usuario.setId(userId);
-        usuario.setEmail("reset@email.com");
+        usuario.setEmail(RESET_EMAIL);
 
-        when(usuarioRepository.findByEmail("reset@email.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByEmail(RESET_EMAIL)).thenReturn(Optional.of(usuario));
         when(passwordResetTokenRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        String token = usuarioService.solicitarResetPassword("reset@email.com");
+        String token = usuarioService.solicitarResetPassword(RESET_EMAIL);
 
         assertNotNull(token);
         verify(passwordResetTokenRepository).save(any());
@@ -333,13 +340,13 @@ class UsuarioServiceImplTest {
         String newPass = "newPass456";
         Usuario usuario = new Usuario();
         usuario.setId(UUID.randomUUID());
-        usuario.setEmail("change@email.com");
+        usuario.setEmail(CHANGE_EMAIL);
         usuario.setPassword(passwordEncoder.encode(currentPass));
 
-        when(usuarioRepository.findByEmail("change@email.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByEmail(CHANGE_EMAIL)).thenReturn(Optional.of(usuario));
         when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        usuarioService.cambiarPassword("change@email.com", currentPass, newPass, newPass, false);
+        usuarioService.cambiarPassword(CHANGE_EMAIL, currentPass, newPass, newPass, false);
 
         verify(usuarioRepository).save(any());
     }
@@ -347,7 +354,7 @@ class UsuarioServiceImplTest {
     @Test
     void shouldThrowWhenPasswordsDoNotMatch() {
         assertThrows(IllegalArgumentException.class, () ->
-                usuarioService.cambiarPassword("email@email.com", "pass", "newPass", "differentConfirm", false));
+                usuarioService.cambiarPassword("email@email.com", "pass", NEW_PASS, "differentConfirm", false));
         verify(usuarioRepository, never()).save(any());
     }
 
@@ -355,13 +362,13 @@ class UsuarioServiceImplTest {
     void shouldThrowWhenCurrentPasswordIsIncorrect() {
         Usuario usuario = new Usuario();
         usuario.setId(UUID.randomUUID());
-        usuario.setEmail("user@email.com");
+        usuario.setEmail(USER_EMAIL);
         usuario.setPassword(passwordEncoder.encode("correctPass"));
 
-        when(usuarioRepository.findByEmail("user@email.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(usuario));
 
         assertThrows(CredencialesInvalidasException.class, () ->
-                usuarioService.cambiarPassword("user@email.com", "wrongPass", "newPass", "newPass", false));
+                usuarioService.cambiarPassword(USER_EMAIL, "wrongPass", NEW_PASS, NEW_PASS, false));
         verify(usuarioRepository, never()).save(any());
     }
 
