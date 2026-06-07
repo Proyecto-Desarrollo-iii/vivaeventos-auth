@@ -19,6 +19,8 @@ import co.empresa.vivaeventos.auth.config.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -233,6 +235,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "usuarios", key = "#email")
     public Usuario actualizarPerfil(String email, ActualizarPerfilRequest request) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsuarioNoEncontradoException(email));
