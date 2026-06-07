@@ -16,8 +16,6 @@ import co.empresa.vivaeventos.auth.domain.repository.IPasswordResetTokenReposito
 import co.empresa.vivaeventos.auth.domain.repository.IUsuarioRepository;
 import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
 import co.empresa.vivaeventos.auth.config.JwtService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,11 +42,6 @@ public class UsuarioServiceImpl implements IUsuarioService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    // Inyección de la misma clase para evitar el problema de "this" en métodos @Transactional
-    @Autowired
-    @Lazy
-    private UsuarioServiceImpl self;
-
     public UsuarioServiceImpl(
             IUsuarioRepository usuarioRepository,
             ISessionRepository sessionRepository,
@@ -72,7 +65,9 @@ public class UsuarioServiceImpl implements IUsuarioService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    // SE ELIMINÓ @Transactional(readOnly = true) DE AQUÍ.
+    // Esto resuelve la queja de SonarCloud sobre llamadas internas a métodos transaccionales.
+    // Spring Data JPA ya maneja transacciones de lectura por defecto en el repositorio.
     public Usuario findByEmail(String email) {
         return usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsuarioNoEncontradoException(email));
@@ -184,9 +179,8 @@ public class UsuarioServiceImpl implements IUsuarioService {
                 )
         );
 
-        // CORRECCIÓN: Llamamos a findByEmail a través de "self" para que el proxy interceptor
-        // de Spring pueda aplicar la anotación @Transactional correctamente.
-        Usuario usuario = self.findByEmail(request.getEmail());
+        // Vuelve a estar normal: Llamada directa
+        Usuario usuario = findByEmail(request.getEmail());
 
         if (usuario.getIsActive() == null || !usuario.getIsActive()) {
             throw new CredencialesInvalidasException();
