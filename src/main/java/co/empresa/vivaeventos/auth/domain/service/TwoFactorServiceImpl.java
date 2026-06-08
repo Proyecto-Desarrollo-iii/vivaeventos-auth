@@ -147,7 +147,7 @@ public class TwoFactorServiceImpl implements ITwoFactorService {
         twoFactorCode.setExpiresAt(LocalDateTime.now().plusMinutes(5));
         twoFactorCode.setUsed(false);
         twoFactorCodeRepository.save(twoFactorCode);
-        log.info("Codigo 2FA para {} ({}}): {}", email, userId, code);
+        log.info("Codigo 2FA enviado para {} ({})", email, userId);
         return code;
     }
 

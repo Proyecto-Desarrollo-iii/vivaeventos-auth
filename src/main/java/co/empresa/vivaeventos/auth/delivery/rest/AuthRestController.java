@@ -143,7 +143,7 @@ public class AuthRestController {
             String token = usuarioService.solicitarResetPassword(email);
             Map<String, Object> respuesta = new HashMap<>();
             respuesta.put("mensaje", "Si el email existe, recibiras un enlace de recuperacion");
-            log.info("Password reset token for {}: {}", email, token);
+            log.info("Password reset requested for {}", email);
             return ResponseEntity.ok(respuesta);
         } catch (Exception e) {
             Map<String, Object> respuesta = new HashMap<>();

@@ -25,7 +25,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import co.empresa.vivaeventos.auth.domain.model.Dto.ActualizarPerfilRequest;
+import co.empresa.vivaeventos.auth.domain.model.PasswordResetToken;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -403,5 +405,105 @@ class UsuarioServiceImplTest {
 
         assertThrows(DatosInvalidosException.class, () -> usuarioService.save(request));
         verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRestablecerPassword() {
+        UUID userId = UUID.randomUUID();
+        String tokenStr = "reset-token-123";
+
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setToken(tokenStr);
+        resetToken.setUserId(userId);
+        resetToken.setExpiresAt(LocalDateTime.now().plusHours(1));
+
+        Usuario usuario = new Usuario();
+        usuario.setId(userId);
+        usuario.setEmail("user@email.com");
+        usuario.setPassword(passwordEncoder.encode("oldPass"));
+
+        when(passwordResetTokenRepository.findByToken(tokenStr)).thenReturn(Optional.of(resetToken));
+        when(usuarioRepository.findById(userId)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(passwordResetTokenRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        usuarioService.restablecerPassword(tokenStr, "newPassword123");
+
+        verify(usuarioRepository).save(usuario);
+        assertTrue(passwordEncoder.matches("newPassword123", usuario.getPassword()));
+        assertNotNull(resetToken.getUsedAt());
+    }
+
+    @Test
+    void shouldThrowWhenResetTokenNotFound() {
+        when(passwordResetTokenRepository.findByToken("invalid-token")).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class,
+                () -> usuarioService.restablecerPassword("invalid-token", "newPassword123"));
+    }
+
+    @Test
+    void shouldThrowWhenResetTokenExpired() {
+        String tokenStr = "expired-token";
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setToken(tokenStr);
+        resetToken.setUserId(UUID.randomUUID());
+        resetToken.setExpiresAt(LocalDateTime.now().minusHours(1));
+
+        when(passwordResetTokenRepository.findByToken(tokenStr)).thenReturn(Optional.of(resetToken));
+
+        assertThrows(RuntimeException.class,
+                () -> usuarioService.restablecerPassword(tokenStr, "newPassword123"));
+    }
+
+    @Test
+    void shouldThrowWhenResetTokenAlreadyUsed() {
+        String tokenStr = "used-token";
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setToken(tokenStr);
+        resetToken.setUserId(UUID.randomUUID());
+        resetToken.setExpiresAt(LocalDateTime.now().plusHours(1));
+        resetToken.setUsedAt(LocalDateTime.now());
+
+        when(passwordResetTokenRepository.findByToken(tokenStr)).thenReturn(Optional.of(resetToken));
+
+        assertThrows(RuntimeException.class,
+                () -> usuarioService.restablecerPassword(tokenStr, "newPassword123"));
+    }
+
+    @Test
+    void shouldThrowTwoFactorRequiredDuringLogin() {
+        LoginRequest request = new LoginRequest("2fa@email.com", "pass");
+        Usuario usuario = new Usuario();
+        usuario.setId(UUID.randomUUID());
+        usuario.setEmail("2fa@email.com");
+        usuario.setPassword(passwordEncoder.encode("pass"));
+        usuario.setIsActive(true);
+        usuario.setTwoFactorEnabled(true);
+
+        when(usuarioRepository.findByEmail("2fa@email.com")).thenReturn(Optional.of(usuario));
+        when(jwtService.generateTemporaryToken(usuario)).thenReturn("temp-token");
+
+        assertThrows(co.empresa.vivaeventos.auth.domain.exception.TwoFactorRequiredException.class,
+                () -> usuarioService.login(request));
+    }
+
+    @Test
+    void shouldCloseOtherSessionsOnPasswordChange() {
+        UUID userId = UUID.randomUUID();
+        String currentPass = "oldPass123";
+        String newPass = "newPass456";
+        Usuario usuario = new Usuario();
+        usuario.setId(userId);
+        usuario.setEmail("close@email.com");
+        usuario.setPassword(passwordEncoder.encode(currentPass));
+
+        when(usuarioRepository.findByEmail("close@email.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        usuarioService.cambiarPassword("close@email.com", currentPass, newPass, newPass, true);
+
+        verify(usuarioRepository).save(any());
+        verify(sessionRepository).deleteByUserId(userId);
     }
 }
