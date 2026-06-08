@@ -2,11 +2,11 @@ package co.empresa.vivaeventos.auth.delivery.rest;
 
 import co.empresa.vivaeventos.auth.config.JwtService;
 import co.empresa.vivaeventos.auth.domain.exception.TwoFactorInvalidException;
-import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
-import co.empresa.vivaeventos.auth.domain.model.Dto.TwoFactorDisableRequest;
-import co.empresa.vivaeventos.auth.domain.model.Dto.TwoFactorLoginRequest;
-import co.empresa.vivaeventos.auth.domain.model.Dto.TwoFactorSetupResponse;
-import co.empresa.vivaeventos.auth.domain.model.Dto.TwoFactorVerifyRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.AuthResponse;
+import co.empresa.vivaeventos.auth.domain.model.dto.TwoFactorDisableRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.TwoFactorLoginRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.TwoFactorSetupResponse;
+import co.empresa.vivaeventos.auth.domain.model.dto.TwoFactorVerifyRequest;
 import co.empresa.vivaeventos.auth.domain.model.Session;
 import co.empresa.vivaeventos.auth.domain.model.Usuario;
 import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;

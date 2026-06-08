@@ -3,7 +3,7 @@ package co.empresa.vivaeventos.auth.domain.service;
 import co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException;
 import co.empresa.vivaeventos.auth.domain.exception.TwoFactorInvalidException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
-import co.empresa.vivaeventos.auth.domain.model.Dto.TwoFactorSetupResponse;
+import co.empresa.vivaeventos.auth.domain.model.dto.TwoFactorSetupResponse;
 import co.empresa.vivaeventos.auth.domain.model.TwoFactorCode;
 import co.empresa.vivaeventos.auth.domain.model.Usuario;
 import co.empresa.vivaeventos.auth.domain.repository.ITwoFactorCodeRepository;

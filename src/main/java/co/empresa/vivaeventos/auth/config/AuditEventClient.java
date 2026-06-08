@@ -2,18 +2,23 @@ package co.empresa.vivaeventos.auth.config;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.SecretKey;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
 @Component
+@Slf4j
 public class AuditEventClient {
+
+    private static final String AUDIT_LOG_PATH = "/api/v1/audit/log";
 
     private final RestTemplate restTemplate;
     private final String auditServiceUrl;
@@ -28,35 +33,33 @@ public class AuditEventClient {
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public void logEvent(String serviceName, String userId, String userRole,
-                         String action, String entityType, String entityId,
-                         String newValues, String ipAddress) {
+    public void logEvent(AuditEventRequest request) {
         try {
             String token = Jwts.builder()
                     .subject("audit-client")
                     .claim("role", "SYSTEM")
-                    .issuedAt(new Date())
-                    .expiration(new Date(System.currentTimeMillis() + 60000))
+                    .issuedAt(Date.from(Instant.now()))
+                    .expiration(Date.from(Instant.now().plusSeconds(60)))
                     .signWith(secretKey)
                     .compact();
 
             Map<String, Object> body = new java.util.HashMap<>();
-            body.put("serviceName", serviceName);
-            body.put("userId", userId != null ? UUID.fromString(userId) : null);
-            body.put("userRole", userRole);
-            body.put("action", action);
-            body.put("entityType", entityType);
-            body.put("entityId", entityId != null ? UUID.fromString(entityId) : null);
-            body.put("newValues", newValues);
-            body.put("ipAddress", ipAddress);
+            body.put("serviceName", request.serviceName());
+            body.put("userId", request.userId() != null ? UUID.fromString(request.userId()) : null);
+            body.put("userRole", request.userRole());
+            body.put("action", request.action());
+            body.put("entityType", request.entityType());
+            body.put("entityId", request.entityId() != null ? UUID.fromString(request.entityId()) : null);
+            body.put("newValues", request.newValues());
+            body.put("ipAddress", request.ipAddress());
 
             restTemplate.postForEntity(
-                    auditServiceUrl + "/api/v1/audit/log",
+                    auditServiceUrl + AUDIT_LOG_PATH,
                     new org.springframework.http.HttpEntity<>(body, createHeaders(token)),
                     Void.class
             );
         } catch (Exception e) {
-            System.err.println("Error enviando evento de auditoria: " + e.getMessage());
+            log.error("Error enviando evento de auditoria: {}", e.getMessage());
         }
     }
 

@@ -1,6 +1,6 @@
 package co.empresa.vivaeventos.auth.domain.service;
 
-import co.empresa.vivaeventos.auth.domain.model.Dto.TwoFactorSetupResponse;
+import co.empresa.vivaeventos.auth.domain.model.dto.TwoFactorSetupResponse;
 
 import java.util.UUID;
 

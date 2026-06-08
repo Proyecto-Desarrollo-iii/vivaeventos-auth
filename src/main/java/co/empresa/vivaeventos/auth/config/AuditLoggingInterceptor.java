@@ -58,7 +58,7 @@ public class AuditLoggingInterceptor implements HandlerInterceptor {
 
         String newValues = "{\"method\":\"" + method + "\",\"path\":\"" + path + "\",\"status\":" + status + ",\"durationMs\":" + duration + "}";
 
-        auditEventClient.logEvent("auth", userId, userRole, "HTTP_REQUEST", method, null, newValues, ip);
+        auditEventClient.logEvent(new AuditEventRequest("auth", userId, userRole, "HTTP_REQUEST", method, null, newValues, ip));
     }
 
     private boolean isExcluded(String path) {

@@ -1,4 +1,4 @@
-package co.empresa.vivaeventos.auth.domain.model.Dto;
+package co.empresa.vivaeventos.auth.domain.model.dto;
 
 import lombok.Data;
 
