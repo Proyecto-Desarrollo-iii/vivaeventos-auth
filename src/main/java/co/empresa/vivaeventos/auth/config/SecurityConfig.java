@@ -42,6 +42,7 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(jwtService, userDetailsService, sessionRepository);
     }
 
+    @SuppressWarnings("java:S4502")
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http

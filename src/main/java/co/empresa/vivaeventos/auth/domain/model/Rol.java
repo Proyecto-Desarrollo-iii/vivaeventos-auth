@@ -4,5 +4,6 @@ public enum Rol {
     CLIENTE,
     ORGANIZADOR,
     LOGISTICA,
-    ADMIN
+    ADMIN,
+    GERENTE
 }

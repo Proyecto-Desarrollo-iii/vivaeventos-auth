@@ -92,6 +92,11 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -131,8 +136,7 @@
                     </execution>
                     <execution>
                         <id>report</id>
-                        <phase>test</phase>
-                        <goals>
+                        <phase>verify</phase> <goals>
                             <goal>report</goal>
                         </goals>
                     </execution>

@@ -2,6 +2,7 @@ package co.empresa.vivaeventos.auth.domain.service;
 
 import co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException;
 import co.empresa.vivaeventos.auth.domain.exception.DatosInvalidosException;
+import co.empresa.vivaeventos.auth.domain.exception.TokenInvalidoException;
 import co.empresa.vivaeventos.auth.domain.exception.TwoFactorRequiredException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioExistenteException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
@@ -67,8 +68,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    @Cacheable(value = "usuarios", key = "#email")
+    // Corrección Sonar: Se quitó @Transactional para evitar problemas de proxy en llamadas internas
     public Usuario findByEmail(String email) {
         return usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsuarioNoEncontradoException(email));
@@ -87,23 +87,21 @@ public class UsuarioServiceImpl implements IUsuarioService {
         usuario.setEmail(request.getEmail().trim().toLowerCase());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
         usuario.setFullName(request.getFullName().trim());
-        
-        // Mapear el rol a los valores válidos de la base de datos
+
         String role = request.getRole() != null ? request.getRole().toUpperCase() : "CLIENT";
-        // Mapeo de variantes en español/otros a los valores del CHECK constraint
         if (role.equals("CLIENTE") || role.equals("CLIENT")) {
             role = "CLIENT";
         } else if (role.equals("ORGANIZADOR") || role.equals("ORGANIZER")) {
             role = "ORGANIZER";
-        } else if (role.equals("ADMIN") || role.equals("ADMINISTRADOR")) {
+        } else if (role.equals("ADMIN") || role.equals("ADMINISTRADOR") || role.equals("GERENTE")) {
             role = "ADMIN";
         } else if (role.equals("LOGISTICA") || role.equals("LOGISTICS")) {
             role = "LOGISTICA";
         } else {
-            role = "CLIENT"; // Valor por defecto
+            role = "CLIENT";
         }
         usuario.setRole(role);
-        
+
         usuario.setPhonePrefix(request.getPhonePrefix());
         usuario.setPhone(request.getPhone());
         usuario.setDocumentType(request.getDocumentType());
@@ -115,16 +113,11 @@ public class UsuarioServiceImpl implements IUsuarioService {
         return usuarioRepository.save(usuario);
     }
 
-    /**
-     * Valida los datos obligatorios y el formato de la solicitud de registro.
-     * Lanza {@link DatosInvalidosException} (HTTP 400) ante el primer error encontrado.
-     */
     private void validarDatosRegistro(RegistroRequest request) {
         if (request == null) {
             throw new DatosInvalidosException("Los datos de registro son obligatorios");
         }
 
-        // Email
         String email = request.getEmail();
         if (email == null || email.isBlank()) {
             throw new DatosInvalidosException("El email es obligatorio");
@@ -133,37 +126,29 @@ public class UsuarioServiceImpl implements IUsuarioService {
             throw new DatosInvalidosException("El formato del email no es valido");
         }
 
-        // Contrasena
         String password = request.getPassword();
         if (password == null || password.isBlank()) {
             throw new DatosInvalidosException("La contrasena es obligatoria");
         }
         if (password.length() < PASSWORD_MIN_LENGTH) {
-            throw new DatosInvalidosException(
-                    "La contrasena debe tener al menos " + PASSWORD_MIN_LENGTH + " caracteres");
+            throw new DatosInvalidosException("La contrasena debe tener al menos " + PASSWORD_MIN_LENGTH + " caracteres");
         }
 
-        // Nombre completo
         String fullName = request.getFullName();
         if (fullName == null || fullName.isBlank()) {
             throw new DatosInvalidosException("El nombre completo es obligatorio");
         }
 
-        // Numero de documento (opcional, pero si viene debe ser numerico)
         String documentNumber = request.getDocumentNumber();
-        if (documentNumber != null && !documentNumber.isBlank()
-                && !SOLO_DIGITOS.matcher(documentNumber.trim()).matches()) {
+        if (documentNumber != null && !documentNumber.isBlank() && !SOLO_DIGITOS.matcher(documentNumber.trim()).matches()) {
             throw new DatosInvalidosException("El numero de documento solo debe contener numeros");
         }
 
-        // Telefono (opcional, pero si viene debe ser numerico)
         String phone = request.getPhone();
-        if (phone != null && !phone.isBlank()
-                && !SOLO_DIGITOS.matcher(phone.trim()).matches()) {
+        if (phone != null && !phone.isBlank() && !SOLO_DIGITOS.matcher(phone.trim()).matches()) {
             throw new DatosInvalidosException("El telefono solo debe contener numeros");
         }
 
-        // Fecha de nacimiento (opcional, pero no puede ser futura)
         LocalDate birthDate = request.getBirthDate();
         if (birthDate != null && birthDate.isAfter(LocalDate.now())) {
             throw new DatosInvalidosException("La fecha de nacimiento no puede ser futura");
@@ -174,14 +159,11 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Transactional
     public AuthResponse login(LoginRequest request) {
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
         Usuario usuario = findByEmail(request.getEmail());
-        
+
         if (usuario.getIsActive() == null || !usuario.getIsActive()) {
             throw new CredencialesInvalidasException();
         }
@@ -200,18 +182,10 @@ public class UsuarioServiceImpl implements IUsuarioService {
         sessionRepository.save(session);
 
         return new AuthResponse(
-                token,
-                "Bearer",
-                usuario.getId().toString(),
-                usuario.getEmail(),
-                usuario.getFullName(),
-                usuario.getRole(),
-                usuario.getPhonePrefix(),
-                usuario.getPhone(),
-                usuario.getDocumentType(),
-                usuario.getDocumentNumber(),
-                usuario.getCountry(),
-                usuario.getBirthDate() != null ? usuario.getBirthDate().toString() : null,
+                token, "Bearer", usuario.getId().toString(), usuario.getEmail(),
+                usuario.getFullName(), usuario.getRole(), usuario.getPhonePrefix(),
+                usuario.getPhone(), usuario.getDocumentType(), usuario.getDocumentNumber(),
+                usuario.getCountry(), usuario.getBirthDate() != null ? usuario.getBirthDate().toString() : null,
                 Boolean.TRUE.equals(usuario.getTwoFactorEnabled())
         );
     }
@@ -241,14 +215,13 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Transactional
     public void restablecerPassword(String token, String newPassword) {
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Token de recuperacion invalido"));
+                .orElseThrow(() -> new TokenInvalidoException("Token de recuperacion invalido"));
 
         if (resetToken.isExpired()) {
-            throw new RuntimeException("Token de recuperacion expirado");
+            throw new TokenInvalidoException("Token de recuperacion expirado");
         }
-
         if (resetToken.isUsed()) {
-            throw new RuntimeException("Token de recuperacion ya utilizado");
+            throw new TokenInvalidoException("Token de recuperacion ya utilizado");
         }
 
         Usuario usuario = usuarioRepository.findById(resetToken.getUserId())
@@ -268,27 +241,13 @@ public class UsuarioServiceImpl implements IUsuarioService {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsuarioNoEncontradoException(email));
 
-        if (request.getFullName() != null) {
-            usuario.setFullName(request.getFullName());
-        }
-        if (request.getPhonePrefix() != null) {
-            usuario.setPhonePrefix(request.getPhonePrefix());
-        }
-        if (request.getPhone() != null) {
-            usuario.setPhone(request.getPhone());
-        }
-        if (request.getDocumentType() != null) {
-            usuario.setDocumentType(request.getDocumentType());
-        }
-        if (request.getDocumentNumber() != null) {
-            usuario.setDocumentNumber(request.getDocumentNumber());
-        }
-        if (request.getCountry() != null) {
-            usuario.setCountry(request.getCountry());
-        }
-        if (request.getBirthDate() != null) {
-            usuario.setBirthDate(request.getBirthDate());
-        }
+        if (request.getFullName() != null) usuario.setFullName(request.getFullName());
+        if (request.getPhonePrefix() != null) usuario.setPhonePrefix(request.getPhonePrefix());
+        if (request.getPhone() != null) usuario.setPhone(request.getPhone());
+        if (request.getDocumentType() != null) usuario.setDocumentType(request.getDocumentType());
+        if (request.getDocumentNumber() != null) usuario.setDocumentNumber(request.getDocumentNumber());
+        if (request.getCountry() != null) usuario.setCountry(request.getCountry());
+        if (request.getBirthDate() != null) usuario.setBirthDate(request.getBirthDate());
 
         return usuarioRepository.save(usuario);
     }

@@ -54,7 +54,7 @@ public class JwtService {
         try {
             String tokenType = extractClaim(token, claims -> claims.get(TOKEN_TYPE_CLAIM, String.class));
             return TOKEN_TYPE_TEMPORARY.equals(tokenType);
-        } catch (Exception e) {
+        } catch (io.jsonwebtoken.JwtException e) {
             return false;
         }
     }

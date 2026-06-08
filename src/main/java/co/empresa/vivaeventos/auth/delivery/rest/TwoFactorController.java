@@ -1,7 +1,9 @@
 package co.empresa.vivaeventos.auth.delivery.rest;
 
 import co.empresa.vivaeventos.auth.config.JwtService;
+import co.empresa.vivaeventos.auth.domain.exception.TokenInvalidoException;
 import co.empresa.vivaeventos.auth.domain.exception.TwoFactorInvalidException;
+import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
 import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
 import co.empresa.vivaeventos.auth.domain.model.Dto.TwoFactorDisableRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.TwoFactorLoginRequest;
@@ -52,7 +54,7 @@ public class TwoFactorController {
 
         if ("EMAIL".equals(method)) {
             Usuario usuario = usuarioRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                    .orElseThrow(() -> new UsuarioNoEncontradoException(email));
             twoFactorService.sendEmailCode(usuario.getId(), email);
             twoFactorService.updateTwoFactorMethod(email, "EMAIL");
 
@@ -88,16 +90,16 @@ public class TwoFactorController {
             }
             String email = jwtService.extractUsername(tempToken);
             Usuario usuario = usuarioRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                    .orElseThrow(() -> new UsuarioNoEncontradoException(email));
             twoFactorService.sendEmailCode(usuario.getId(), email);
             Map<String, Object> respuesta = new HashMap<>();
             respuesta.put("mensaje", "Codigo enviado a tu correo");
             return ResponseEntity.ok(respuesta);
-        } catch (Exception e) {
-            log.error("Error al enviar codigo 2FA", e);
+        } catch (UsuarioNoEncontradoException e) {
+            log.error("Error al enviar codigo 2FA: {}", e.getMessage());
             Map<String, Object> error = new HashMap<>();
-            error.put("error", "Error interno del servidor");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            error.put("error", "Usuario no encontrado");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
     }
 
@@ -108,7 +110,7 @@ public class TwoFactorController {
 
         try {
             Usuario usuario = usuarioRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                    .orElseThrow(() -> new UsuarioNoEncontradoException(email));
 
             if (usuario.getTwoFactorEnabled()) {
                 Map<String, Object> error = new HashMap<>();
@@ -195,7 +197,7 @@ public class TwoFactorController {
             }
 
             Usuario usuario = usuarioRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                    .orElseThrow(() -> new UsuarioNoEncontradoException(email));
 
             boolean codeValid;
             if ("EMAIL".equals(usuario.getTwoFactorMethod())) {
@@ -237,11 +239,11 @@ public class TwoFactorController {
             respuesta.put("user", userMap);
 
             return ResponseEntity.ok(respuesta);
-        } catch (Exception e) {
-            log.error("Error en autenticacion 2FA", e);
+        } catch (TwoFactorInvalidException e) {
+            log.error("Error en autenticacion 2FA: {}", e.getMessage());
             Map<String, Object> error = new HashMap<>();
-            error.put("error", "Error interno del servidor");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
 
