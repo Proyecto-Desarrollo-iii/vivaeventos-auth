@@ -168,7 +168,11 @@ class UsuarioServiceImplTest {
         }
 
         when(usuarioRepository.existsByEmail(email)).thenReturn(false);
-        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(usuarioRepository.save(any())).thenAnswer(i -> {
+            Usuario u = i.getArgument(0);
+            if (u.getId() == null) u.setId(UUID.randomUUID());
+            return u;
+        });
 
         Usuario result = usuarioService.save(request);
 
