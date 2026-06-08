@@ -6,16 +6,18 @@ import co.empresa.vivaeventos.auth.domain.exception.TokenInvalidoException;
 import co.empresa.vivaeventos.auth.domain.exception.TwoFactorRequiredException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioExistenteException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
-import co.empresa.vivaeventos.auth.domain.model.Dto.ActualizarPerfilRequest;
-import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
-import co.empresa.vivaeventos.auth.domain.model.Dto.LoginRequest;
-import co.empresa.vivaeventos.auth.domain.model.Dto.RegistroRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.ActualizarPerfilRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.AuthResponse;
+import co.empresa.vivaeventos.auth.domain.model.dto.LoginRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.RegistroRequest;
 import co.empresa.vivaeventos.auth.domain.model.PasswordResetToken;
 import co.empresa.vivaeventos.auth.domain.model.Session;
 import co.empresa.vivaeventos.auth.domain.model.Usuario;
 import co.empresa.vivaeventos.auth.domain.repository.IPasswordResetTokenRepository;
 import co.empresa.vivaeventos.auth.domain.repository.IUsuarioRepository;
 import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
+import co.empresa.vivaeventos.auth.config.AuditEventClient;
+import co.empresa.vivaeventos.auth.config.AuditEventRequest;
 import co.empresa.vivaeventos.auth.config.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -44,6 +46,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final AuditEventClient auditEventClient;
 
     public UsuarioServiceImpl(
             IUsuarioRepository usuarioRepository,
@@ -51,13 +54,15 @@ public class UsuarioServiceImpl implements IUsuarioService {
             IPasswordResetTokenRepository passwordResetTokenRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            AuthenticationManager authenticationManager) {
+            AuthenticationManager authenticationManager,
+            AuditEventClient auditEventClient) {
         this.usuarioRepository = usuarioRepository;
         this.sessionRepository = sessionRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
+        this.auditEventClient = auditEventClient;
     }
 
     @Override
@@ -110,7 +115,16 @@ public class UsuarioServiceImpl implements IUsuarioService {
         usuario.setBirthDate(request.getBirthDate());
         usuario.setIsActive(true);
 
-        return usuarioRepository.save(usuario);
+        Usuario saved = usuarioRepository.save(usuario);
+
+        auditEventClient.logEvent(new AuditEventRequest(
+                "auth", saved.getId().toString(), saved.getRole(),
+                "REGISTRO", "usuario", saved.getId().toString(),
+                "{\"email\":\"" + saved.getEmail() + "\",\"role\":\"" + saved.getRole() + "\"}",
+                null
+        ));
+
+        return saved;
     }
 
     private void validarDatosRegistro(RegistroRequest request) {
@@ -180,6 +194,13 @@ public class UsuarioServiceImpl implements IUsuarioService {
         session.setToken(token);
         session.setExpiresAt(LocalDateTime.now().plusSeconds(jwtService.getExpirationSeconds()));
         sessionRepository.save(session);
+
+        auditEventClient.logEvent(new AuditEventRequest(
+                "auth", usuario.getId().toString(), usuario.getRole(),
+                "LOGIN", "usuario", usuario.getId().toString(),
+                "{\"email\":\"" + usuario.getEmail() + "\"}",
+                null
+        ));
 
         return new AuthResponse(
                 token, "Bearer", usuario.getId().toString(), usuario.getEmail(),

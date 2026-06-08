@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -41,6 +43,7 @@ class JwtAuthenticationFilterTest {
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder.clearContext();
         filter = new JwtAuthenticationFilter(jwtService, userDetailsService, sessionRepository);
     }
 

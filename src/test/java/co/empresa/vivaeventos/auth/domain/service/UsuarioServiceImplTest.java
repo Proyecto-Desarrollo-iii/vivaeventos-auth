@@ -1,14 +1,15 @@
 package co.empresa.vivaeventos.auth.domain.service;
 
+import co.empresa.vivaeventos.auth.config.AuditEventClient;
 import co.empresa.vivaeventos.auth.config.JwtService;
 import co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException;
 import co.empresa.vivaeventos.auth.domain.exception.DatosInvalidosException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioExistenteException;
 import co.empresa.vivaeventos.auth.domain.exception.TokenInvalidoException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
-import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
-import co.empresa.vivaeventos.auth.domain.model.Dto.LoginRequest;
-import co.empresa.vivaeventos.auth.domain.model.Dto.RegistroRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.AuthResponse;
+import co.empresa.vivaeventos.auth.domain.model.dto.LoginRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.RegistroRequest;
 import co.empresa.vivaeventos.auth.domain.model.Rol;
 import co.empresa.vivaeventos.auth.domain.model.Usuario;
 import co.empresa.vivaeventos.auth.domain.repository.IPasswordResetTokenRepository;
@@ -25,7 +26,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import co.empresa.vivaeventos.auth.domain.model.Dto.ActualizarPerfilRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.ActualizarPerfilRequest;
 import co.empresa.vivaeventos.auth.domain.model.PasswordResetToken;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -49,6 +50,8 @@ class UsuarioServiceImplTest {
     private JwtService jwtService;
     @Mock
     private AuthenticationManager authenticationManager;
+    @Mock
+    private AuditEventClient auditEventClient;
 
     private PasswordEncoder passwordEncoder;
     private UsuarioServiceImpl usuarioService;
@@ -65,7 +68,7 @@ class UsuarioServiceImplTest {
         passwordEncoder = new BCryptPasswordEncoder();
         usuarioService = new UsuarioServiceImpl(
                 usuarioRepository, sessionRepository, passwordResetTokenRepository,
-                passwordEncoder, jwtService, authenticationManager
+                passwordEncoder, jwtService, authenticationManager, auditEventClient
         );
     }
 
@@ -165,7 +168,11 @@ class UsuarioServiceImplTest {
         }
 
         when(usuarioRepository.existsByEmail(email)).thenReturn(false);
-        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(usuarioRepository.save(any())).thenAnswer(i -> {
+            Usuario u = i.getArgument(0);
+            if (u.getId() == null) u.setId(UUID.randomUUID());
+            return u;
+        });
 
         Usuario result = usuarioService.save(request);
 

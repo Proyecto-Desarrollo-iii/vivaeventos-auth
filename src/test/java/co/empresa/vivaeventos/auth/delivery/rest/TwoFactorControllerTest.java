@@ -1,11 +1,16 @@
 package co.empresa.vivaeventos.auth.delivery.rest;
 
 import co.empresa.vivaeventos.auth.config.JwtService;
-import co.empresa.vivaeventos.auth.domain.model.Dto.TwoFactorSetupResponse;
+import co.empresa.vivaeventos.auth.domain.model.dto.TwoFactorSetupResponse;
 import co.empresa.vivaeventos.auth.domain.model.Usuario;
 import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
 import co.empresa.vivaeventos.auth.domain.repository.IUsuarioRepository;
 import co.empresa.vivaeventos.auth.domain.service.ITwoFactorService;
+import co.empresa.vivaeventos.auth.config.AuditEventClient;
+import co.empresa.vivaeventos.auth.config.AuditLoggingInterceptor;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -41,6 +46,18 @@ class TwoFactorControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private AuditEventClient auditEventClient;
+
+    @MockitoBean
+    private AuditLoggingInterceptor auditLoggingInterceptor;
+
+    @BeforeEach
+    void setUp() {
+        when(auditLoggingInterceptor.preHandle(any(HttpServletRequest.class), any(HttpServletResponse.class), any()))
+                .thenReturn(true);
+    }
 
     @Test
     void shouldSetupTwoFactorApp() throws Exception {

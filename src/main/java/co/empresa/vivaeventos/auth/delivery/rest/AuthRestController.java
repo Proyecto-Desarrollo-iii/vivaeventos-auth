@@ -2,11 +2,11 @@ package co.empresa.vivaeventos.auth.delivery.rest;
 
 import co.empresa.vivaeventos.auth.domain.exception.TokenInvalidoException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
-import co.empresa.vivaeventos.auth.domain.model.Dto.ActualizarPerfilRequest;
-import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
-import co.empresa.vivaeventos.auth.domain.model.Dto.CambiarPasswordRequest;
-import co.empresa.vivaeventos.auth.domain.model.Dto.LoginRequest;
-import co.empresa.vivaeventos.auth.domain.model.Dto.RegistroRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.ActualizarPerfilRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.AuthResponse;
+import co.empresa.vivaeventos.auth.domain.model.dto.CambiarPasswordRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.LoginRequest;
+import co.empresa.vivaeventos.auth.domain.model.dto.RegistroRequest;
 import co.empresa.vivaeventos.auth.domain.model.Usuario;
 import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
 import co.empresa.vivaeventos.auth.domain.service.IUsuarioService;

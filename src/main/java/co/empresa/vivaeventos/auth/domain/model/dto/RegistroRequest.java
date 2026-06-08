@@ -1,11 +1,14 @@
-package co.empresa.vivaeventos.auth.domain.model.Dto;
+package co.empresa.vivaeventos.auth.domain.model.dto;
 
 import lombok.Data;
 import java.time.LocalDate;
 
 @Data
-public class ActualizarPerfilRequest {
+public class RegistroRequest {
+    private String email;
+    private String password;
     private String fullName;
+    private String role;
     private String phonePrefix;
     private String phone;
     private String documentType;
