@@ -69,11 +69,6 @@ public class AuthRestController {
             Map<String, Object> error = new HashMap<>();
             error.put("error", "Email o contrasena incorrectos");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-        } catch (Exception e) {
-            log.error("Error en registro de usuario", e);
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", "Error interno del servidor");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
@@ -155,11 +150,6 @@ public class AuthRestController {
             Map<String, Object> respuesta = new HashMap<>();
             respuesta.put("mensaje", "Si el email existe, recibiras un enlace de recuperacion");
             return ResponseEntity.ok(respuesta);
-        } catch (Exception e) {
-            log.error("Error al solicitar reset de password para {}", email, e);
-            Map<String, Object> respuesta = new HashMap<>();
-            respuesta.put("mensaje", "Si el email existe, recibiras un enlace de recuperacion");
-            return ResponseEntity.ok(respuesta);
         }
     }
 
@@ -183,11 +173,6 @@ public class AuthRestController {
             Map<String, Object> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(error);
-        } catch (Exception e) {
-            log.error("Error al restablecer password", e);
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", "Error interno del servidor");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 

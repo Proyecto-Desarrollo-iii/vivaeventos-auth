@@ -74,6 +74,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
     }
 
+    @SuppressWarnings("java:S112")
+    @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
         log.error("Unexpected error", ex);
         Map<String, Object> respuesta = new HashMap<>();
