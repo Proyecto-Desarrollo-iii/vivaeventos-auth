@@ -4,8 +4,13 @@ import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
 import co.empresa.vivaeventos.auth.domain.model.Dto.LoginRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.RegistroRequest;
 import co.empresa.vivaeventos.auth.domain.model.Usuario;
+import co.empresa.vivaeventos.auth.config.AuditEventClient;
+import co.empresa.vivaeventos.auth.config.AuditLoggingInterceptor;
 import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
 import co.empresa.vivaeventos.auth.domain.service.IUsuarioService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -31,6 +36,18 @@ class AuthRestControllerTest {
 
     @MockitoBean
     private ISessionRepository sessionRepository;
+
+    @MockitoBean
+    private AuditEventClient auditEventClient;
+
+    @MockitoBean
+    private AuditLoggingInterceptor auditLoggingInterceptor;
+
+    @BeforeEach
+    void setUp() {
+        when(auditLoggingInterceptor.preHandle(any(HttpServletRequest.class), any(HttpServletResponse.class), any()))
+                .thenReturn(true);
+    }
 
     @Test
     void shouldPing() throws Exception {

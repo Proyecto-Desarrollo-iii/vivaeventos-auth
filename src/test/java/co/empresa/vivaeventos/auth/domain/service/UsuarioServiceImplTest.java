@@ -1,5 +1,6 @@
 package co.empresa.vivaeventos.auth.domain.service;
 
+import co.empresa.vivaeventos.auth.config.AuditEventClient;
 import co.empresa.vivaeventos.auth.config.JwtService;
 import co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException;
 import co.empresa.vivaeventos.auth.domain.exception.DatosInvalidosException;
@@ -42,6 +43,8 @@ class UsuarioServiceImplTest {
     private JwtService jwtService;
     @Mock
     private AuthenticationManager authenticationManager;
+    @Mock
+    private AuditEventClient auditEventClient;
 
     private PasswordEncoder passwordEncoder;
     private UsuarioServiceImpl usuarioService;
@@ -51,7 +54,7 @@ class UsuarioServiceImplTest {
         passwordEncoder = new BCryptPasswordEncoder();
         usuarioService = new UsuarioServiceImpl(
                 usuarioRepository, sessionRepository, passwordResetTokenRepository,
-                passwordEncoder, jwtService, authenticationManager
+                passwordEncoder, jwtService, authenticationManager, auditEventClient
         );
     }
 
@@ -134,7 +137,11 @@ class UsuarioServiceImplTest {
         request.setRole("ORGANIZADOR");
 
         when(usuarioRepository.existsByEmail("role@email.com")).thenReturn(false);
-        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(usuarioRepository.save(any())).thenAnswer(i -> {
+            Usuario u = i.getArgument(0);
+            u.setId(UUID.randomUUID());
+            return u;
+        });
 
         Usuario result = usuarioService.save(request);
 
