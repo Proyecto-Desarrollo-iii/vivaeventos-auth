@@ -64,7 +64,7 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         Map<String, Object> body = response.getBody();
         assertNotNull(body);
-        assertEquals(true, body.get("twoFactorRequired"));
+        assertTrue((Boolean) body.get("twoFactorRequired"));
         assertEquals("temp-token-123", body.get("tempToken"));
         assertEquals("user-id-456", body.get("userId"));
     }

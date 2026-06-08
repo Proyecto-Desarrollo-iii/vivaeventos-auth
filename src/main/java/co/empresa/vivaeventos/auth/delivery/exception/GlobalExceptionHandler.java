@@ -53,7 +53,27 @@ public class GlobalExceptionHandler {
         return ResponseEntity.ok(respuesta);
     }
 
-    @ExceptionHandler(Exception.class)
+    @ExceptionHandler(TokenInvalidoException.class)
+    public ResponseEntity<Map<String, Object>> handleTokenInvalido(TokenInvalidoException ex) {
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
+    }
+
+    @ExceptionHandler(TwoFactorInvalidException.class)
+    public ResponseEntity<Map<String, Object>> handleTwoFactorInvalid(TwoFactorInvalidException ex) {
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
+    }
+
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
         log.error("Unexpected error", ex);
         Map<String, Object> respuesta = new HashMap<>();

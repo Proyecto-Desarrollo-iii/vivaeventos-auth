@@ -180,7 +180,7 @@ class AuthRestControllerTest {
 
     @Test
     void shouldReturnBadRequestWhenRestablecerPasswordFails() throws Exception {
-        doThrow(new RuntimeException("Token invalido")).when(usuarioService).restablecerPassword("bad-token", "pass");
+        doThrow(new co.empresa.vivaeventos.auth.domain.exception.TokenInvalidoException("Token invalido")).when(usuarioService).restablecerPassword("bad-token", "pass");
 
         mockMvc.perform(post("/api/v1/auth/restablecer-password")
                         .contentType(MediaType.APPLICATION_JSON)

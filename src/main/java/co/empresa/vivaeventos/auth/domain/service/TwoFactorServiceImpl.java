@@ -1,6 +1,7 @@
 package co.empresa.vivaeventos.auth.domain.service;
 
 import co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException;
+import co.empresa.vivaeventos.auth.domain.exception.QrGenerationException;
 import co.empresa.vivaeventos.auth.domain.exception.TwoFactorInvalidException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
 import co.empresa.vivaeventos.auth.domain.model.Dto.TwoFactorSetupResponse;
@@ -170,7 +171,7 @@ public class TwoFactorServiceImpl implements ITwoFactorService {
 
             return Base64.getEncoder().encodeToString(pngData);
         } catch (WriterException | IOException e) {
-            throw new RuntimeException("Error al generar codigo QR", e);
+            throw new QrGenerationException("Error al generar codigo QR", e);
         }
     }
 }

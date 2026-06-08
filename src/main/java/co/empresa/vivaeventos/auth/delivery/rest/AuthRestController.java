@@ -1,5 +1,7 @@
 package co.empresa.vivaeventos.auth.delivery.rest;
 
+import co.empresa.vivaeventos.auth.domain.exception.TokenInvalidoException;
+import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
 import co.empresa.vivaeventos.auth.domain.model.Dto.ActualizarPerfilRequest;
 import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
 import co.empresa.vivaeventos.auth.domain.model.Dto.CambiarPasswordRequest;
@@ -63,6 +65,10 @@ public class AuthRestController {
             Map<String, Object> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        } catch (co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Email o contrasena incorrectos");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         } catch (Exception e) {
             log.error("Error en registro de usuario", e);
             Map<String, Object> error = new HashMap<>();
@@ -145,7 +151,12 @@ public class AuthRestController {
             respuesta.put("mensaje", "Si el email existe, recibiras un enlace de recuperacion");
             log.info("Password reset requested for {}", email);
             return ResponseEntity.ok(respuesta);
+        } catch (UsuarioNoEncontradoException e) {
+            Map<String, Object> respuesta = new HashMap<>();
+            respuesta.put("mensaje", "Si el email existe, recibiras un enlace de recuperacion");
+            return ResponseEntity.ok(respuesta);
         } catch (Exception e) {
+            log.error("Error al solicitar reset de password para {}", email, e);
             Map<String, Object> respuesta = new HashMap<>();
             respuesta.put("mensaje", "Si el email existe, recibiras un enlace de recuperacion");
             return ResponseEntity.ok(respuesta);
@@ -168,10 +179,15 @@ public class AuthRestController {
             Map<String, Object> respuesta = new HashMap<>();
             respuesta.put("mensaje", "Contrasena restablecida exitosamente");
             return ResponseEntity.ok(respuesta);
-        } catch (RuntimeException e) {
+        } catch (TokenInvalidoException e) {
             Map<String, Object> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(error);
+        } catch (Exception e) {
+            log.error("Error al restablecer password", e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Error interno del servidor");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 

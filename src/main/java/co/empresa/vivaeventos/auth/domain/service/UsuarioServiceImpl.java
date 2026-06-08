@@ -2,6 +2,7 @@ package co.empresa.vivaeventos.auth.domain.service;
 
 import co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException;
 import co.empresa.vivaeventos.auth.domain.exception.DatosInvalidosException;
+import co.empresa.vivaeventos.auth.domain.exception.TokenInvalidoException;
 import co.empresa.vivaeventos.auth.domain.exception.TwoFactorRequiredException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioExistenteException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
@@ -214,13 +215,13 @@ public class UsuarioServiceImpl implements IUsuarioService {
     @Transactional
     public void restablecerPassword(String token, String newPassword) {
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Token de recuperacion invalido"));
+                .orElseThrow(() -> new TokenInvalidoException("Token de recuperacion invalido"));
 
         if (resetToken.isExpired()) {
-            throw new RuntimeException("Token de recuperacion expirado");
+            throw new TokenInvalidoException("Token de recuperacion expirado");
         }
         if (resetToken.isUsed()) {
-            throw new RuntimeException("Token de recuperacion ya utilizado");
+            throw new TokenInvalidoException("Token de recuperacion ya utilizado");
         }
 
         Usuario usuario = usuarioRepository.findById(resetToken.getUserId())

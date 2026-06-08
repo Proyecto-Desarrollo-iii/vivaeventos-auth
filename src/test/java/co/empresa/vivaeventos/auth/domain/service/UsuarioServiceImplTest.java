@@ -4,6 +4,7 @@ import co.empresa.vivaeventos.auth.config.JwtService;
 import co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException;
 import co.empresa.vivaeventos.auth.domain.exception.DatosInvalidosException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioExistenteException;
+import co.empresa.vivaeventos.auth.domain.exception.TokenInvalidoException;
 import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
 import co.empresa.vivaeventos.auth.domain.model.Dto.AuthResponse;
 import co.empresa.vivaeventos.auth.domain.model.Dto.LoginRequest;
@@ -438,7 +439,7 @@ class UsuarioServiceImplTest {
     void shouldThrowWhenResetTokenNotFound() {
         when(passwordResetTokenRepository.findByToken("invalid-token")).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class,
+        assertThrows(TokenInvalidoException.class,
                 () -> usuarioService.restablecerPassword("invalid-token", "newPassword123"));
     }
 
@@ -452,7 +453,7 @@ class UsuarioServiceImplTest {
 
         when(passwordResetTokenRepository.findByToken(tokenStr)).thenReturn(Optional.of(resetToken));
 
-        assertThrows(RuntimeException.class,
+        assertThrows(TokenInvalidoException.class,
                 () -> usuarioService.restablecerPassword(tokenStr, "newPassword123"));
     }
 
@@ -467,7 +468,7 @@ class UsuarioServiceImplTest {
 
         when(passwordResetTokenRepository.findByToken(tokenStr)).thenReturn(Optional.of(resetToken));
 
-        assertThrows(RuntimeException.class,
+        assertThrows(TokenInvalidoException.class,
                 () -> usuarioService.restablecerPassword(tokenStr, "newPassword123"));
     }
 
