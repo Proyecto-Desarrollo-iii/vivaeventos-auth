@@ -77,4 +77,31 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals("Error interno del servidor", Objects.requireNonNull(response.getBody()).get("error"));
     }
+
+    @Test
+    void shouldHandleTokenInvalido() {
+        TokenInvalidoException ex = new TokenInvalidoException("Token expirado");
+        ResponseEntity<Map<String, Object>> response = handler.handleTokenInvalido(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Token expirado", Objects.requireNonNull(response.getBody()).get("error"));
+    }
+
+    @Test
+    void shouldHandleTwoFactorInvalid() {
+        TwoFactorInvalidException ex = new TwoFactorInvalidException();
+        ResponseEntity<Map<String, Object>> response = handler.handleTwoFactorInvalid(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Codigo de verificacion invalido", Objects.requireNonNull(response.getBody()).get("error"));
+    }
+
+    @Test
+    void shouldHandleIllegalArgument() {
+        IllegalArgumentException ex = new IllegalArgumentException("Argumento invalido");
+        ResponseEntity<Map<String, Object>> response = handler.handleIllegalArgument(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Argumento invalido", Objects.requireNonNull(response.getBody()).get("error"));
+    }
 }
