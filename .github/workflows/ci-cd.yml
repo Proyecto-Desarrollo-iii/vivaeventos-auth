@@ -163,3 +163,4 @@ jobs:
             SPRING_DATASOURCE_URL=jdbc:postgresql://${{ secrets.DB_HOST }}:5432/vivaeventos_auth?sslmode=require
             SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USER }}
             SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}
+            SERVICES_AUDIT_URL=${{ secrets.SERVICES_AUDIT_URL }}
