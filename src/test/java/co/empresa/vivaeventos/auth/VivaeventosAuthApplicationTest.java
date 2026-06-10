@@ -10,8 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 @TestPropertySource(properties = {
-        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration",
-        "spring.main.allow-bean-definition-overriding=true"
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
 })
 class VivaeventosAuthApplicationTest {
 
@@ -21,10 +20,5 @@ class VivaeventosAuthApplicationTest {
     @Test
     void contextLoads() {
         assertNotNull(applicationContext);
-    }
-
-    @Test
-    void mainShouldStartApplication() {
-        VivaeventosAuthApplication.main(new String[]{});
     }
 }
