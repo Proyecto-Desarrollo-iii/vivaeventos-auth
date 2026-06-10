@@ -1,6 +1,9 @@
 package co.empresa.vivaeventos.auth.delivery.rest;
 
 import co.empresa.vivaeventos.auth.config.JwtService;
+import co.empresa.vivaeventos.auth.domain.exception.CredencialesInvalidasException;
+import co.empresa.vivaeventos.auth.domain.exception.TwoFactorInvalidException;
+import co.empresa.vivaeventos.auth.domain.exception.UsuarioNoEncontradoException;
 import co.empresa.vivaeventos.auth.domain.model.dto.TwoFactorSetupResponse;
 import co.empresa.vivaeventos.auth.domain.model.Usuario;
 import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
@@ -293,5 +296,137 @@ class TwoFactorControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(true))
                 .andExpect(jsonPath("$.method").value("APP"));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenSendCodeUserNotFound() throws Exception {
+        when(jwtService.isTemporaryToken("temp-token")).thenReturn(true);
+        when(jwtService.isTokenExpired("temp-token")).thenReturn(false);
+        when(jwtService.extractUsername("temp-token")).thenReturn("missing@email.com");
+        when(usuarioRepository.findByEmail("missing@email.com")).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/v1/auth/2fa/send-code")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tempToken\":\"temp-token\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Usuario no encontrado"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenVerifyWithInvalidCode() throws Exception {
+        Usuario usuario = new Usuario();
+        usuario.setId(UUID.randomUUID());
+        usuario.setEmail("test@email.com");
+        usuario.setTwoFactorEnabled(false);
+        usuario.setTwoFactorSecret("testSecret");
+        usuario.setTwoFactorMethod("APP");
+
+        when(usuarioRepository.findByEmail("test@email.com")).thenReturn(Optional.of(usuario));
+        when(twoFactorService.verifyCode("testSecret", "123456")).thenThrow(
+                new TwoFactorInvalidException());
+
+        mockMvc.perform(post("/api/v1/auth/2fa/verify")
+                        .with(user("test@email.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"123456\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Codigo de verificacion invalido"));
+    }
+
+    @Test
+    void shouldReturnConflictWhenVerifyWithIllegalState() throws Exception {
+        Usuario usuario = new Usuario();
+        usuario.setId(UUID.randomUUID());
+        usuario.setEmail("test@email.com");
+        usuario.setTwoFactorEnabled(false);
+        usuario.setTwoFactorSecret("testSecret");
+        usuario.setTwoFactorMethod("APP");
+
+        when(usuarioRepository.findByEmail("test@email.com")).thenReturn(Optional.of(usuario));
+        when(twoFactorService.verifyCode("testSecret", "123456")).thenThrow(
+                new IllegalStateException("2FA no configurado"));
+
+        mockMvc.perform(post("/api/v1/auth/2fa/verify")
+                        .with(user("test@email.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"123456\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("2FA no configurado"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenDisableWithInvalidCode() throws Exception {
+        doThrow(new TwoFactorInvalidException())
+                .when(twoFactorService).disableTwoFactor("test@email.com", "pass", "000000");
+
+        mockMvc.perform(post("/api/v1/auth/2fa/disable")
+                        .with(user("test@email.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"password\":\"pass\",\"code\":\"000000\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Codigo de verificacion invalido"));
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenDisableWithWrongPassword() throws Exception {
+        doThrow(new CredencialesInvalidasException())
+                .when(twoFactorService).disableTwoFactor("test@email.com", "wrong", "123456");
+
+        mockMvc.perform(post("/api/v1/auth/2fa/disable")
+                        .with(user("test@email.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"password\":\"wrong\",\"code\":\"123456\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Contrasena incorrecta"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenAuthenticateWithInvalidCode() throws Exception {
+        Usuario usuario = new Usuario();
+        usuario.setId(UUID.randomUUID());
+        usuario.setEmail("test@email.com");
+        usuario.setTwoFactorSecret("testSecret");
+        usuario.setTwoFactorMethod("APP");
+
+        when(jwtService.isTemporaryToken("temp-token")).thenReturn(true);
+        when(jwtService.isTokenExpired("temp-token")).thenReturn(false);
+        when(jwtService.extractUsername("temp-token")).thenReturn("test@email.com");
+        when(usuarioRepository.findByEmail("test@email.com")).thenReturn(Optional.of(usuario));
+        when(twoFactorService.verifyCode("testSecret", "123456")).thenThrow(
+                new TwoFactorInvalidException());
+
+        mockMvc.perform(post("/api/v1/auth/2fa/authenticate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tempToken\":\"temp-token\",\"code\":\"123456\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Codigo de verificacion invalido"));
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenAuthenticateWithExpiredTempToken() throws Exception {
+        when(jwtService.isTemporaryToken("expired-token")).thenReturn(true);
+        when(jwtService.isTokenExpired("expired-token")).thenReturn(true);
+
+        mockMvc.perform(post("/api/v1/auth/2fa/authenticate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tempToken\":\"expired-token\",\"code\":\"123456\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Token expirado, inicie sesion nuevamente"));
+    }
+
+    @Test
+    void shouldSetupTwoFactorEmailWithoutBody() throws Exception {
+        Usuario usuario = new Usuario();
+        usuario.setId(UUID.randomUUID());
+        usuario.setEmail("test@email.com");
+
+        when(twoFactorService.generateSetup("test@email.com"))
+                .thenReturn(new TwoFactorSetupResponse("secret", "otpauth://...", "base64img"));
+
+        mockMvc.perform(post("/api/v1/auth/2fa/setup")
+                        .with(user("test@email.com"))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensaje").value("Escanea el codigo QR con tu app de autenticacion"));
     }
 }
