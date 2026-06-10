@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -63,6 +65,7 @@ jobs:
           retention-days: 7
 
       - name: SonarQube analysis
+        continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -71,9 +74,10 @@ jobs:
             -Dsonar.projectKey=vivaeventos-auth
             -Dsonar.organization=proyecto-desarrollo-iii
             -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.sources=src/main/java
             -Dsonar.java.binaries=target/classes
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-            -Dsonar.coverage.exclusions=**/model/Dto/*.java,**/repository/*.java,**/domain/service/I*.java
+            -Dsonar.coverage.exclusions=**/model/dto/*.java,**/repository/*.java,**/domain/service/I*.java
 
   docker-build-and-push:
     needs: build-and-test

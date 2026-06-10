@@ -71,8 +71,12 @@ public class TwoFactorServiceImpl implements ITwoFactorService {
     @Override
     public boolean verifyCode(String secret, String code) {
         if (secret == null || code == null) return false;
-        GoogleAuthenticator gAuth = new GoogleAuthenticator();
-        return gAuth.authorize(secret, Integer.parseInt(code));
+        try {
+            GoogleAuthenticator gAuth = new GoogleAuthenticator();
+            return gAuth.authorize(secret, Integer.parseInt(code));
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     @Override

@@ -117,10 +117,11 @@ public class UsuarioServiceImpl implements IUsuarioService {
 
         Usuario saved = usuarioRepository.save(usuario);
 
+        String newValues = "{\"email\":\"" + saved.getEmail() + "\",\"role\":\"" + saved.getRole() + "\"}";
         auditEventClient.logEvent(new AuditEventRequest(
                 "auth", saved.getId().toString(), saved.getRole(),
                 "REGISTRO", "usuario", saved.getId().toString(),
-                "{\"email\":\"" + saved.getEmail() + "\",\"role\":\"" + saved.getRole() + "\"}",
+                newValues,
                 null
         ));
 
