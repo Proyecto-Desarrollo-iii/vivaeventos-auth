@@ -4,6 +4,7 @@ import co.empresa.vivaeventos.auth.domain.repository.IPasswordResetTokenReposito
 import co.empresa.vivaeventos.auth.domain.repository.ISessionRepository;
 import co.empresa.vivaeventos.auth.domain.repository.ITwoFactorCodeRepository;
 import co.empresa.vivaeventos.auth.domain.repository.IUsuarioRepository;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,6 +36,7 @@ class VivaeventosAuthApplicationTest {
     private ApplicationContext applicationContext;
 
     @Test
+    @DisplayName("application context should load")
     void contextLoads() {
         assertNotNull(applicationContext);
     }
